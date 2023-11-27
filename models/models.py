@@ -13,10 +13,10 @@ class Gender(enum.Enum):
     female = 2
 
 
-class User(Base):
-    __tablename__ = "users"
+class Patient(Base):
+    __tablename__ = "patients"
 
-    id_user: Mapped[int] = mapped_column(primary_key=True)
+    id_patient: Mapped[int] = mapped_column(primary_key=True)
     first_name: Mapped[str]
     second_name: Mapped[str | None]
     last_name: Mapped[str | None]
@@ -25,7 +25,7 @@ class User(Base):
     height: Mapped[int | None]  # altura en centímetros
     weight: Mapped[float | None]  # peso en kilogramos
     measure: Mapped[list["BloodPressure"]] = relationship(
-        back_populates="user", cascade="all, delete"
+        back_populates="patient", cascade="all, delete"
     )
 
 
@@ -39,5 +39,5 @@ class BloodPressure(Base):
     hour = mapped_column(
         DateTime(timezone=True), server_default=func.now(), primary_key=True
     )
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), primary_key=True)
-    user: Mapped["User"] = relationship(back_populates="measure")
+    patient_id: Mapped[int] = mapped_column(ForeignKey("patients.id"), primary_key=True)
+    patient: Mapped["Patient"] = relationship(back_populates="measure")
