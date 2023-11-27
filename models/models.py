@@ -17,6 +17,7 @@ class Patient(Base):
     __tablename__ = "patients"
 
     id_patient: Mapped[int] = mapped_column(primary_key=True)
+    password: Mapped[str]
     first_name: Mapped[str]
     second_name: Mapped[str | None]
     last_name: Mapped[str | None]
