@@ -1,6 +1,6 @@
 import enum
 
-from sqlalchemy import Enum, create_engine, ForeignKey, func, DateTime
+from sqlalchemy import Enum, ForeignKey, func, DateTime
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
