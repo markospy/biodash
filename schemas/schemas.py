@@ -2,7 +2,7 @@ from datetime import datetime, date
 
 from pydantic import BaseModel
 
-from models.models import Gender
+from models.models import Gender, User
 
 
 class UserSchema(BaseModel):
@@ -19,6 +19,7 @@ class PatientSchema(BaseModel):
     gender: Gender | None = None
     height: int | None = None
     weight: float | None = None
+    username: User
 
 
 class BloodPressureSchema(BaseModel):
