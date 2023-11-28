@@ -5,7 +5,12 @@ from pydantic import BaseModel
 from models.models import Gender
 
 
-class PatientOut(BaseModel):
+class UserSchema(BaseModel):
+    username: str
+    password: str
+
+
+class PatientSchema(BaseModel):
     first_name: str
     second_name: str | None = None
     last_name: str | None = None
@@ -13,10 +18,6 @@ class PatientOut(BaseModel):
     gender: Gender | None = None
     height: int | None = None
     weight: float | None = None
-
-
-class PatientIn(PatientOut):
-    password: str
 
 
 class BloodPressureSchema(BaseModel):
