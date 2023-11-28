@@ -11,6 +11,7 @@ class UserSchema(BaseModel):
 
 
 class PatientSchema(BaseModel):
+    patient_id: str
     first_name: str
     second_name: str | None = None
     last_name: str | None = None
