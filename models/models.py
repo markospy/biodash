@@ -26,7 +26,7 @@ class User(Base):
 class Patient(Base):
     __tablename__ = "patients"
 
-    id_patient: Mapped[str] = mapped_column(primary_key=True)
+    patient_id: Mapped[str] = mapped_column(primary_key=True)
     first_name: Mapped[str]
     second_name: Mapped[str | None]
     last_name: Mapped[str | None]
