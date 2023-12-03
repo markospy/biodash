@@ -7,6 +7,9 @@ from models.models import Gender, User
 
 class UserSchema(BaseModel):
     username: str
+
+
+class UserIn(UserSchema):
     password: str
 
 
