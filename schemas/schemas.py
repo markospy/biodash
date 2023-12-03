@@ -10,6 +10,10 @@ class UserSchema(BaseModel):
     password: str
 
 
+class UserInDB(UserSchema):
+    hashed_password: str
+
+
 class PatientSchema(BaseModel):
     patient_id: str
     first_name: str
