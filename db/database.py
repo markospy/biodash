@@ -6,7 +6,7 @@ class Base(DeclarativeBase):
     pass
 
 
-DATABASE_URL = "sqlite://base.db"
+DATABASE_URL = "sqlite:///db/base.db"
 engine = create_engine(DATABASE_URL, echo=True)
 
 session_local = sessionmaker(autocommit=False, autoflush=False, bind=engine)
