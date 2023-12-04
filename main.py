@@ -1,10 +1,25 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
+
 from routes import registration_form
+from models.models import create_tables
 
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    try:
+        create_tables()
+        yield
+    except Exception as e:
+        # Handle the exception or log the error
+        print(f"Error occurred during database initialization: {e}")
 
-app.include_router(registration_form.router, prefix="/register")
+
+app = FastAPI(lifespan=lifespan)
+
+
+app.include_router(registration_form.router)
 
 
 @app.get("/")
