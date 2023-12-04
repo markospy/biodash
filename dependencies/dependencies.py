@@ -1,4 +1,4 @@
-from db.database import session_local
+from models.models import session_local
 
 
 # Dependency database
