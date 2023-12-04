@@ -10,7 +10,7 @@ from security.security import get_password_hash
 
 # Register user
 def register(db: Session, user: UserIn):
-    stmt = select(User).where(User.usename == UserIn.username)
+    stmt = select(User).where(User.username == user.username)
     result = db.scalars(stmt).one_or_none()
     if result:
         raise HTTPException(
@@ -18,9 +18,8 @@ def register(db: Session, user: UserIn):
         )
 
     # Encrypt the password entered by the user
-    hashed_password = get_password_hash(user.model_dump["password"])
-    user_bd = UserInDB(
-        username=user.model_dump()["username"], hashed_password=hashed_password
-    )
+    hashed_password = get_password_hash(user.password)
+    user_bd = UserInDB(username=user.username, hashed_password=hashed_password)
 
     db.add(User(**user_bd.model_dump()))
+    db.commit()
