@@ -1,7 +1,13 @@
 import enum
 
-from sqlalchemy import Enum, ForeignKey, func, DateTime
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy import Enum, create_engine, ForeignKey, func, DateTime
+from sqlalchemy.orm import (
+    DeclarativeBase,
+    Mapped,
+    mapped_column,
+    sessionmaker,
+    relationship,
+)
 
 
 class Base(DeclarativeBase):
@@ -16,8 +22,8 @@ class Gender(enum.Enum):
 class User(Base):
     __tablename__ = "user"
 
-    usename: Mapped[str] = mapped_column(primary_key=True)
-    password: Mapped[str]
+    username: Mapped[str] = mapped_column(primary_key=True)
+    hashed_password: Mapped[str]
     patient_relarionship: Mapped[list["Patient"]] = relationship(
         back_populates="username_relarionship", cascade="all, delete"
     )
@@ -26,7 +32,7 @@ class User(Base):
 class Patient(Base):
     __tablename__ = "patients"
 
-    patient_id: Mapped[str] = mapped_column(primary_key=True)
+    id: Mapped[str] = mapped_column(primary_key=True)
     first_name: Mapped[str]
     second_name: Mapped[str | None]
     last_name: Mapped[str | None]
@@ -56,3 +62,13 @@ class BloodPressure(Base):
     patient_id: Mapped[int] = mapped_column(ForeignKey("patients.id"), primary_key=True)
 
     patient: Mapped["Patient"] = relationship(back_populates="measure")
+
+
+DATABASE_URL = "sqlite:///db/base.db"
+engine = create_engine(DATABASE_URL, echo=True)
+
+session_local = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+
+def create_tables():
+    Base.metadata.create_all(engine)
