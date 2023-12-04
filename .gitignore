@@ -212,4 +212,4 @@ pyrightconfig.json
 # Custom
 *.db
 resources
-*.json
+.vscode
