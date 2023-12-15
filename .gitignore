@@ -213,3 +213,4 @@ pyrightconfig.json
 *.db
 resources
 .vscode
+*.png
