@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from routes import user
+from routes import user, jwt_oauth_user
 from models.models import create_tables
 
 
@@ -20,6 +20,7 @@ app = FastAPI(lifespan=lifespan)
 
 
 app.include_router(user.router)
+app.include_router(jwt_oauth_user.router)
 
 
 @app.get("/")
