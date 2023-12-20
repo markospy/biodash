@@ -1,4 +1,5 @@
 import os
+from typing import Annotated
 from datetime import datetime, timedelta
 
 from dotenv import load_dotenv
@@ -8,6 +9,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 from sqlalchemy import select
+from pydantic import BaseModel
 
 from dependencies.dependencies import get_db
 from models.models import User
@@ -15,14 +17,23 @@ from schemas.schemas import UserInDB
 
 router = APIRouter()
 
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    username: str | None = None
+
+
 load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY")
-ALGORITHM = os.getenv("ALGORIM")
-ACCESS_TOKEN_EXPIRE_MINUTES = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")
-
-pwd_context = CryptContext(schemes=["bcrypt"])
+ALGORITHM = os.getenv("ALGORITHM")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+pwd_context = CryptContext(schemes=["bcrypt"])
 
 
 def verify_password(plain_password, hashed_password):
@@ -34,8 +45,9 @@ def get_password_hash(password):
 
 
 def get_user(username: str, db: Session):
-    user = db.execute(select(User).where(User.username == username)).first()
-    return UserInDB(**user)
+    user = db.scalars(select(User).where(User.username == username)).first()
+    if user:
+        return UserInDB(username=user.username, hashed_password=user.hashed_password)
 
 
 def authenticate_user(db: Session, username: str, password: str):
@@ -44,7 +56,7 @@ def authenticate_user(db: Session, username: str, password: str):
         return False
     if not verify_password(password, user.hashed_password):
         return False
-    return user  # Devolver el usuario
+    return user
 
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
@@ -58,28 +70,35 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     return encoded_jwt
 
 
-def get_current_user(token: str = Depends(oauth2_scheme)):
-    exception = HTTPException(
+def get_current_user(
+    token: Annotated[str, Depends(oauth2_scheme)],
+    db: Session = Depends(get_db),
+):
+    credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM]).get("sub")
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
-            raise exception
+            raise credentials_exception
+        token_data = TokenData(username=username)
     except JWTError:
-        raise exception
-    user = get_user(username)
+        raise credentials_exception
+    user = get_user(token_data.username, db)
     if not user:
-        raise exception
+        raise credentials_exception
     return user
 
 
-@router.post("/token")
-def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = authenticate_user(Depends(get_db), form_data.username, form_data.password)
+@router.post("/token", response_model=Token)
+def login_for_access_token(
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    db: Session = Depends(get_db),
+):
+    user = authenticate_user(db, form_data.username, form_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
