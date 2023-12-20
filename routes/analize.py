@@ -10,6 +10,12 @@ from schemas.schemas import AnalizeBloodPressure
 
 router = APIRouter(prefix="/analize", tags=["Analize"])
 
+list_params = [
+    BloodPressure.systolic,
+    BloodPressure.diastolic,
+    BloodPressure.heart_rate,
+]
+
 
 @router.get("/blood-pressure/mean", response_model=AnalizeBloodPressure)
 def mean(
@@ -20,24 +26,25 @@ def mean(
     db: Session = Depends(get_db),
 ):
     """Get the average value of blood pressure and heart rate"""
-    stmt = select(BloodPressure).where(BloodPressure.patient_id == patient_id)
-    results = db.scalars(stmt).all()
-    if not results:
-        raise HTTPException(
-            status_code=404, detail=f"The patient with id {patient_id} has no records"
-        )
-    systolic_mean = None
-    diastolic_mean = None
-    heart_rate_mean = None
-    if systolic:
-        systolic_list = [measurement.systolic for measurement in results]
-        systolic_mean = round(sum(systolic_list) / len(systolic_list), 0)
-    if diastolic:
-        diastolic_list = [measurement.diastolic for measurement in results]
-        diastolic_mean = round(sum(diastolic_list) / len(diastolic_list), 0)
-    if heart_rate:
-        heart_rate_list = [measurement.heart_rate for measurement in results]
-        heart_rate_mean = round(sum(heart_rate_list) / len(heart_rate_list), 0)
+    list_results = []
+    for value in list_params:
+        if value == BloodPressure.systolic and not systolic:
+            list_results.append(None)
+        elif value == BloodPressure.diastolic and not diastolic:
+            list_results.append(None)
+        elif value == BloodPressure.heart_rate and not heart_rate:
+            list_results.append(None)
+        else:
+            stmt = select(func.avg(value)).where(BloodPressure.patient_id == patient_id)
+            result = db.scalar(stmt)
+            if not result:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"The patient with id {patient_id} has no records",
+                )
+            list_results.append(result)
+
+    systolic_mean, diastolic_mean, heart_rate_mean = list_results
 
     analize = AnalizeBloodPressure(
         systolic=systolic_mean,
@@ -57,21 +64,25 @@ def minimum(
     db: Session = Depends(get_db),
 ):
     """Get the minimum value of blood pressure and heart rate"""
-    stmt = select(BloodPressure).where(BloodPressure.patient_id == patient_id)
-    results = db.scalars(stmt).all()
-    if not results:
-        raise HTTPException(
-            status_code=404, detail=f"The patient with id {patient_id} has no records"
-        )
-    systolic_min = None
-    diastolic_min = None
-    heart_rate_min = None
-    if systolic:
-        systolic_min = min([measurement.systolic for measurement in results])
-    if diastolic:
-        diastolic_min = min([measurement.diastolic for measurement in results])
-    if heart_rate:
-        heart_rate_min = min([measurement.heart_rate for measurement in results])
+    list_results = []
+    for value in list_params:
+        if value == BloodPressure.systolic and not systolic:
+            list_results.append(None)
+        elif value == BloodPressure.diastolic and not diastolic:
+            list_results.append(None)
+        elif value == BloodPressure.heart_rate and not heart_rate:
+            list_results.append(None)
+        else:
+            stmt = select(func.min(value)).where(BloodPressure.patient_id == patient_id)
+            result = db.scalar(stmt)
+            if not result:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"The patient with id {patient_id} has no records",
+                )
+            list_results.append(result)
+
+    systolic_min, diastolic_min, heart_rate_min = list_results
 
     analize = AnalizeBloodPressure(
         systolic=systolic_min,
@@ -91,21 +102,25 @@ def maximum(
     db: Session = Depends(get_db),
 ):
     """Get the maximum value of blood pressure and heart rate"""
-    stmt = select(BloodPressure).where(BloodPressure.patient_id == patient_id)
-    results = db.scalars(stmt).all()
-    if not results:
-        raise HTTPException(
-            status_code=404, detail=f"The patient with id {patient_id} has no records"
-        )
-    systolic_max = None
-    diastolic_max = None
-    heart_rate_max = None
-    if systolic:
-        systolic_max = max([measurement.systolic for measurement in results])
-    if diastolic:
-        diastolic_max = max([measurement.diastolic for measurement in results])
-    if heart_rate:
-        heart_rate_max = max([measurement.heart_rate for measurement in results])
+    list_results = []
+    for value in list_params:
+        if value == BloodPressure.systolic and not systolic:
+            list_results.append(None)
+        elif value == BloodPressure.diastolic and not diastolic:
+            list_results.append(None)
+        elif value == BloodPressure.heart_rate and not heart_rate:
+            list_results.append(None)
+        else:
+            stmt = select(func.max(value)).where(BloodPressure.patient_id == patient_id)
+            result = db.scalar(stmt)
+            if not result:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"The patient with id {patient_id} has no records",
+                )
+            list_results.append(result)
+
+    systolic_max, diastolic_max, heart_rate_max = list_results
 
     analize = AnalizeBloodPressure(
         systolic=systolic_max,
