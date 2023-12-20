@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
 from sqlalchemy import select, update, delete
@@ -6,9 +8,7 @@ from sqlalchemy.orm import Session
 from dependencies.dependencies import get_db
 from models.models import User
 from schemas.schemas import UserIn, UserInDB, UserSchema
-from routes.jwt_oauth_user import get_password_hash
-
-# from routes.jwt_oauth_user import get_current_user
+from routes.jwt_oauth_user import get_password_hash, get_current_user
 
 
 router = APIRouter(prefix="/user", tags=["Users"])
@@ -35,7 +35,10 @@ def register_user(
 
 
 @router.get("/all", response_model=list[UserSchema])
-def get_users(db: Session = Depends(get_db)):
+def get_users(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Session = Depends(get_db),
+):
     results = db.scalars(select(User)).all()
     if not results:
         raise HTTPException(status_code=404, detail="There are no registered users yet")
@@ -44,10 +47,16 @@ def get_users(db: Session = Depends(get_db)):
 
 @router.put("/change_password")
 def update_password(
+    current_user: Annotated[User, Depends(get_current_user)],
     user: UserIn,
     db: Session = Depends(get_db),
 ):
     """User change password"""
+    if current_user.username != user.username:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"You are not authorized to perform this action on the user {user.username}",
+        )
     stmt = select(User).where(User.username == user.username)
     result = db.scalars(stmt).one_or_none()
     if not result:
@@ -69,10 +78,16 @@ def update_password(
 
 @router.delete("/delete_user")
 def delete_user(
+    current_user: Annotated[User, Depends(get_current_user)],
     username: str,
     db: Session = Depends(get_db),
 ):
     """Delete user"""
+    if current_user.username != username:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"You are not authorized to perform this action on the user {username}",
+        )
     stmt = select(User).where(User.username == username)
     result = db.scalars(stmt).one_or_none()
     if not result:
@@ -84,6 +99,3 @@ def delete_user(
     db.execute(stmt)
     db.commit()
     return JSONResponse(f"The user {username} has been successfully deleted.")
-
-
-# current_user: Annotated[UserIn, Depends(get_current_user)]
