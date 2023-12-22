@@ -3,7 +3,7 @@ from typing import Annotated
 from datetime import datetime, timedelta
 
 from dotenv import load_dotenv
-from fastapi import Depends, APIRouter, HTTPException, status
+from fastapi import Depends, APIRouter, HTTPException, status, Response, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -47,7 +47,15 @@ def get_password_hash(password):
 def get_user(username: str, db: Session):
     user = db.scalars(select(User).where(User.username == username)).first()
     if user:
-        return UserInDB(username=user.username, hashed_password=user.hashed_password)
+        return UserInDB(
+            username=user.username,
+            first_name=user.first_name,
+            second_name=user.second_name,
+            last_name=user.last_name,
+            email=user.email,
+            job=user.job,
+            hashed_password=user.hashed_password,
+        )
 
 
 def authenticate_user(db: Session, username: str, password: str):
@@ -79,6 +87,7 @@ def get_current_user(
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    print("HOLA HOLA")
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
@@ -96,6 +105,7 @@ def get_current_user(
 @router.post("/token", response_model=Token)
 def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    # response: Response,
     db: Session = Depends(get_db),
 ):
     user = authenticate_user(db, form_data.username, form_data.password)
@@ -109,4 +119,12 @@ def login_for_access_token(
     access_token = create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
     )
+    # response.set_cookie(key="access_token", value=access_token, expires=28800)
     return {"access_token": access_token, "token_type": "bearer"}
+
+
+# async def read_token(request: Request):
+#     token = request.cookies.get("access_token")
+#     if not token:
+#         return False
+#     return token
