@@ -1,4 +1,4 @@
-# from typing import Annotated
+from typing import Annotated
 from datetime import datetime
 
 from fastapi import APIRouter, Depends
@@ -7,17 +7,20 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import select, delete, update, and_
 from sqlalchemy.orm import Session
 
-from models.models import BloodPressure
+from models.models import BloodPressure, User
 from dependencies.dependencies import get_db
 from schemas.schemas import BloodPressureSchema
-
-# from routes.jwt_oauth_user import get_current_user
+from routes.jwt_oauth_user import get_current_user
 
 router = APIRouter(prefix="/blood_pressure", tags=["Blood pressure"])
 
 
 @router.post("/add")
-def add_measurement(measurement: BloodPressureSchema, db: Session = Depends(get_db)):
+def add_measurement(
+    current_user: Annotated[User, Depends(get_current_user)],
+    measurement: BloodPressureSchema,
+    db: Session = Depends(get_db),
+):
     stmt = select(BloodPressure).where(
         and_(
             BloodPressure.patient_id == measurement.patient_id,
@@ -33,7 +36,11 @@ def add_measurement(measurement: BloodPressureSchema, db: Session = Depends(get_
 
 
 @router.get("/{patient_id}/all_measurements", response_model=list[BloodPressureSchema])
-def get_all_measurements(patient_id: int, db: Session = Depends(get_db)):
+def get_all_measurements(
+    current_user: Annotated[User, Depends(get_current_user)],
+    patient_id: int,
+    db: Session = Depends(get_db),
+):
     stmt = select(BloodPressure).where(BloodPressure.patient_id == patient_id)
     results = db.scalars(stmt).all()
     if not results:
@@ -54,6 +61,7 @@ def get_all_measurements(patient_id: int, db: Session = Depends(get_db)):
 
 @router.put("/{patient_id}_{date}")
 def update_measurement(
+    current_user: Annotated[User, Depends(get_current_user)],
     patient_id: int,
     date: datetime,
     measurement: BloodPressureSchema,
@@ -77,6 +85,7 @@ def update_measurement(
 
 @router.delete("/delete")
 def delete_all_measurements(
+    current_user: Annotated[User, Depends(get_current_user)],
     patient_id: int,
     date: datetime | None = None,
     db: Session = Depends(get_db),
