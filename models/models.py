@@ -23,6 +23,12 @@ class User(Base):
     __tablename__ = "users"
 
     username: Mapped[str] = mapped_column(String(30), primary_key=True)
+    first_name: Mapped[str] = mapped_column(String(30))
+    second_name: Mapped[str | None] = mapped_column(String(30))
+    last_name: Mapped[str | None] = mapped_column(String(30))
+    email: Mapped[str | None] = mapped_column(String(30))
+    verified_email: Mapped[bool] = mapped_column(default=False)
+    job: Mapped[str | None] = mapped_column(String(30))
     hashed_password: Mapped[str] = mapped_column(String(255))
     patient_relarionship: Mapped[list["Patient"]] = relationship(
         back_populates="username_relarionship", cascade="all, delete"
@@ -32,7 +38,7 @@ class User(Base):
 class Patient(Base):
     __tablename__ = "patients"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[str] = mapped_column(String(15), primary_key=True)
     first_name: Mapped[str] = mapped_column(String(30))
     second_name: Mapped[str | None] = mapped_column(String(30))
     last_name: Mapped[str | None] = mapped_column(String(30))
@@ -40,7 +46,7 @@ class Patient(Base):
     gender: Mapped[Gender | None] = mapped_column(Enum(Gender))
     height: Mapped[int | None]
     weight: Mapped[float | None]
-    username: Mapped["User"] = mapped_column(
+    doctor: Mapped["User"] = mapped_column(
         ForeignKey("users.username", ondelete="CASCADE")
     )
     username_relarionship = relationship("User", back_populates="patient_relarionship")
@@ -67,7 +73,7 @@ class BloodPressure(Base):
 
 # Motor mysql
 engine = create_engine(
-    "mysql+pymysql://myuser:mypassword@localhost/mydb?charset=utf8mb4"
+    "mysql+pymysql://marcos:mypassword@localhost/bio_parameters_control?charset=utf8mb4"
 )
 
 session_local = sessionmaker(autocommit=False, autoflush=False, bind=engine)
