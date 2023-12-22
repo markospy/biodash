@@ -7,6 +7,11 @@ from models.models import Gender, User
 
 class UserSchema(BaseModel):
     username: str
+    first_name: str | None = None
+    second_name: str | None = None
+    last_name: str | None = None
+    email: str
+    job: str | None = None
 
 
 class UserIn(UserSchema):
@@ -18,6 +23,7 @@ class UserInDB(UserSchema):
 
 
 class PatientSchema(BaseModel):
+    id: str
     first_name: str
     second_name: str | None = None
     last_name: str | None = None
@@ -25,7 +31,10 @@ class PatientSchema(BaseModel):
     gender: Gender | None = None
     height: int | None = None
     weight: float | None = None
-    username: str
+
+
+class PatientSchemaIn(PatientSchema):
+    doctor: str
 
 
 class BloodPressureSchema(BaseModel):
