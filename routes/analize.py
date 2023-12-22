@@ -1,12 +1,14 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends
 from fastapi.exceptions import HTTPException
 from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 
 from dependencies.dependencies import get_db
-from models.models import BloodPressure
-
+from models.models import BloodPressure, User
 from schemas.schemas import AnalizeBloodPressure
+from routes.jwt_oauth_user import get_current_user
 
 router = APIRouter(prefix="/analize", tags=["Analize"])
 
@@ -19,6 +21,7 @@ list_params = [
 
 @router.get("/blood-pressure/mean", response_model=AnalizeBloodPressure)
 def mean(
+    current_user: Annotated[User, Depends(get_current_user)],
     patient_id: int,
     systolic: bool = True,
     diastolic: bool = True,
@@ -57,6 +60,7 @@ def mean(
 
 @router.get("/blood-pressure/minimum", response_model=AnalizeBloodPressure)
 def minimum(
+    current_user: Annotated[User, Depends(get_current_user)],
     patient_id: int,
     systolic: bool = True,
     diastolic: bool = True,
@@ -95,6 +99,7 @@ def minimum(
 
 @router.get("/blood-pressure/maximum", response_model=AnalizeBloodPressure)
 def maximum(
+    current_user: Annotated[User, Depends(get_current_user)],
     patient_id: int,
     systolic: bool = True,
     diastolic: bool = True,
