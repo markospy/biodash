@@ -27,6 +27,11 @@ def register_user(
         )
     user_bd = UserInDB(
         username=user.username,
+        first_name=user.first_name,
+        second_name=user.second_name,
+        last_name=user.last_name,
+        email=user.email,
+        job=user.job,
         hashed_password=get_password_hash(user.password),
     )
     db.add(User(**user_bd.model_dump()))
@@ -34,46 +39,79 @@ def register_user(
     return JSONResponse(f"The user {user.username} has successfully registered.")
 
 
-@router.get("/all", response_model=list[UserSchema])
+@router.get("/me", response_model=UserSchema)
 def get_users(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Session = Depends(get_db),
 ):
-    results = db.scalars(select(User)).all()
-    if not results:
+    result = db.scalars(
+        select(User).where(User.username == current_user.username)
+    ).one()
+    if not result:
         raise HTTPException(status_code=404, detail="There are no registered users yet")
-    return [UserSchema(username=row.username) for row in results]
+    return UserSchema(
+        username=result.username,
+        first_name=result.first_name,
+        second_name=result.second_name,
+        last_name=result.last_name,
+        email=result.email,
+        job=result.job,
+    )
 
 
-@router.put("/change_password")
-def update_password(
+@router.put("/update_user")
+def update_user(
     current_user: Annotated[User, Depends(get_current_user)],
     user: UserIn,
     db: Session = Depends(get_db),
 ):
     """User change password"""
-    if current_user.username != user.username:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"You are not authorized to perform this action on the user {user.username}",
-        )
     stmt = select(User).where(User.username == user.username)
-    result = db.scalars(stmt).one_or_none()
+    result = db.scalars(stmt).one()
     if not result:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"The user {user.username} does not exist.",
         )
+    if not user.first_name:
+        first_name = result.first_name
+    else:
+        first_name = user.first_name
+    if not user.second_name:
+        second_name = result.second_name
+    else:
+        second_name = user.second_name
+    if not user.last_name:
+        last_name = result.last_name
+    else:
+        last_name = user.last_name
+    if not user.email:
+        email = result.email
+    else:
+        email = user.email
+    if not user.job:
+        job = result.job
+    else:
+        job = user.job
+    if not user.password:
+        password = result.hashed_password
+    else:
+        password = get_password_hash(user.password)
     stmt = (
         update(User)
-        .where(User.username == user.username)
-        .values(hashed_password=get_password_hash(user.password))
+        .where(User.username == current_user.username)
+        .values(
+            first_name=first_name,
+            second_name=second_name,
+            last_name=last_name,
+            email=email,
+            job=job,
+            hashed_password=password,
+        )
     )
     db.execute(stmt)
     db.commit()
-    return JSONResponse(
-        f"The password of the user {user.username} has been changed successfully."
-    )
+    return JSONResponse(f"The {user.username}'s information was updated correctly.")
 
 
 @router.delete("/delete_user")
