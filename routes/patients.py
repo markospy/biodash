@@ -21,6 +21,12 @@ def add_patient(
     patient: PatientSchema,
     db: Session = Depends(get_db),
 ):
+    stmt = select(Patient).where(
+        and_(Patient.id == patient.id, Patient.doctor == current_user.username)
+    )
+    result = db.scalars(stmt).first()
+    if result:
+        raise HTTPException(status_code=409, detail="This patient already exists.")
     patient = PatientSchemaIn(doctor=current_user.username, **patient.model_dump())
     db.add(Patient(**patient.model_dump()))
     db.commit()
