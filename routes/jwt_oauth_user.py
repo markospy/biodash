@@ -3,7 +3,7 @@ from typing import Annotated
 from datetime import datetime, timedelta
 
 from dotenv import load_dotenv
-from fastapi import Depends, APIRouter, HTTPException, status, Response, Request
+from fastapi import Depends, APIRouter, HTTPException, status, Response
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -87,7 +87,6 @@ def get_current_user(
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    print("HOLA HOLA")
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
@@ -105,7 +104,7 @@ def get_current_user(
 @router.post("/token", response_model=Token)
 def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-    # response: Response,
+    response: Response,
     db: Session = Depends(get_db),
 ):
     user = authenticate_user(db, form_data.username, form_data.password)
@@ -119,12 +118,7 @@ def login_for_access_token(
     access_token = create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
     )
-    # response.set_cookie(key="access_token", value=access_token, expires=28800)
+    response.set_cookie(
+        key="access_token", value=access_token, httponly=True, max_age=3600
+    )
     return {"access_token": access_token, "token_type": "bearer"}
-
-
-# async def read_token(request: Request):
-#     token = request.cookies.get("access_token")
-#     if not token:
-#         return False
-#     return token
