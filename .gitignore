@@ -214,3 +214,4 @@ pyrightconfig.json
 resources
 .vscode
 *.png
+solicitar.py
