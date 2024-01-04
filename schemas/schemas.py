@@ -1,51 +1,62 @@
+from pydantic import BaseModel, EmailStr
+
 from datetime import datetime
 
-from pydantic import BaseModel
-
-from models.models import Gender, User
+from models.models import Gender, Scholing
 
 
-class UserSchema(BaseModel):
-    username: str
-    first_name: str | None = None
-    second_name: str | None = None
-    last_name: str | None = None
-    email: str
-    job: str | None = None
+class EmailSchema(BaseModel):
+    email_id: int
+    email_address: EmailStr
+    email_verify: bool = False
+    doctor_id: str
 
 
-class UserIn(UserSchema):
-    password: str
+class AdressSchema(BaseModel):
+    adress_id: int
+    adress: dict
 
 
-class UserInDB(UserSchema):
-    hashed_password: str
-
-
-class PatientSchema(BaseModel):
-    id: str
+class DoctorOut(BaseModel):
+    doctor_id: str
     first_name: str
     second_name: str | None = None
     last_name: str | None = None
-    age: int | None = None
+    specialty: str | None = None
+    password: str
+    portrait: bytes | None = None
+
+
+class DoctorIn(BaseModel):
+    password: str
+
+
+class Patient(BaseModel):
+    patient_id: str
+    first_name: str
+    second_name: str | None = None
+    last_name: str | None = None
+    birth_date: datetime | None = None
     gender: Gender | None = None
     height: int | None = None
     weight: float | None = None
+    scholing: Scholing | None = None
+    employee: bool | None = None
+    married: bool | None = None
+    adress_id: int
 
 
-class PatientSchemaIn(PatientSchema):
-    doctor: str
-
-
-class BloodPressureSchema(BaseModel):
-    systolic: int
-    diastolic: int
-    heart_rate: int | None = None
+class CardiovascularParameter(BaseModel):
     date: datetime
-    patient_id: int
+    systolic: int = 120
+    diastolic: int = 80
+    heart_rate: int | None = None
+    patient_id: str
+    doctor_id: str
 
 
-class AnalizeBloodPressure(BaseModel):
-    systolic: float | None = None
-    diastolic: float | None = None
-    heart_rate: float | None = None
+class BloodSugarLevel(BaseModel):
+    date: datetime
+    value: float
+    patient_id: str
+    doctor_id: str
