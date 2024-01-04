@@ -46,6 +46,11 @@ class Patient(BaseModel):
     adress_id: int
 
 
+class DoctorPatient(BaseModel):
+    doctor_id: str
+    patient_id: str
+
+
 class CardiovascularParameter(BaseModel):
     date: datetime
     systolic: int = 120
