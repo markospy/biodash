@@ -26,7 +26,7 @@ class Scholing(enum.Enum):
 class Email(Base):
     __tablename__ = "email"
 
-    email_id: Mapped[int] = mapped_column(String(30), primary_key=True, autoincrement=True)
+    email_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     email_adreess: Mapped[str] = mapped_column(String(30))
     email_verify: Mapped[bool] = mapped_column(default=False)
     doctor_id: Mapped[str] = mapped_column(String(30), ForeignKey("doctors.doctor_id"))
@@ -36,7 +36,7 @@ class Email(Base):
 class Adress(Base):
     __tablename__ = "adress"
 
-    adress_id: Mapped[int] = mapped_column(String(30), primary_key=True, autoincrement=True)
+    adress_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     adress = mapped_column(JSON)
     patient = relationship("Patient", back_populates="adress")
 
@@ -58,13 +58,14 @@ class Doctor(Base):
     last_name: Mapped[str | None] = mapped_column(String(30))
     specialty: Mapped[str | None] = mapped_column(String(30))
     password: Mapped[str] = mapped_column(String(255))
-    portrait = mapped_column(BLOB, nullable=True)
+    portrait: Mapped[str | None] = mapped_column(String(100))
     patients: Mapped[list["Patient"]] = relationship(secondary=doctor_patient, cascade="all, delete")
     email = relationship("Email", back_populates="doctor", cascade="all, delete")
+
     measure_cvs: Mapped[list["CardiovascularParameter"]] = relationship(
         back_populates="doctor", cascade="all, delete"
     )
-    measure_blood_sugar: Mapped[list["CardiovascularParameter"]] = relationship(
+    measure_blood_sugar: Mapped[list["BloodSugarLevel"]] = relationship(
         back_populates="doctor", cascade="all, delete"
     )
 
@@ -84,12 +85,11 @@ class Patient(Base):
     employee: Mapped[bool | None]
     married: Mapped[bool | None]
     adress_id: Mapped[int] = mapped_column(ForeignKey("adress.adress_id"))
-    adress: Mapped[Adress] = relationship(back_populates="adress", cascade="all, delete")
-    doctors: Mapped[list["Doctor"]] = relationship(secondary=doctor_patient, cascade="all, delete")
+    adress: Mapped[Adress] = relationship(back_populates="patient", cascade="all, delete")
     measure_cvs: Mapped[list["CardiovascularParameter"]] = relationship(
         back_populates="patient", cascade="all, delete"
     )
-    measure_blood_sugar: Mapped[list["CardiovascularParameter"]] = relationship(
+    measure_blood_sugar: Mapped[list["BloodSugarLevel"]] = relationship(
         back_populates="patient", cascade="all, delete"
     )
 
