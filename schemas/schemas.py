@@ -6,15 +6,14 @@ from models.models import Gender, Scholing
 
 
 class EmailSchema(BaseModel):
-    email_id: int
     email_address: EmailStr
     email_verify: bool = False
     doctor_id: str
 
 
-class AdressSchema(BaseModel):
-    adress_id: int
-    adress: dict
+class AddressSchema(BaseModel):
+    address_id: int
+    address: dict
 
 
 class DoctorOut(BaseModel):
@@ -24,6 +23,7 @@ class DoctorOut(BaseModel):
     last_name: str | None = None
     specialty: str | None = None
     portrait: str | None = None
+    email_address: str | None = None
 
 
 class DoctorIn(DoctorOut):
@@ -38,6 +38,7 @@ class DoctorUp(BaseModel):
     specialty: str | None = None
     portrait: str | None = None
     password: str | None = None
+    email_address: str | None = None
 
     @validator("*", pre=True, allow_reuse=True)
     def check_null_values(cls, value):
