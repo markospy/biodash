@@ -27,18 +27,18 @@ class Email(Base):
     __tablename__ = "email"
 
     email_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    email_adreess: Mapped[str] = mapped_column(String(30))
+    email_address: Mapped[str] = mapped_column(String(30))
     email_verify: Mapped[bool] = mapped_column(default=False)
     doctor_id: Mapped[str] = mapped_column(String(30), ForeignKey("doctors.doctor_id"))
     doctor = relationship("Doctor", back_populates="email")
 
 
-class Adress(Base):
-    __tablename__ = "adress"
+class Address(Base):
+    __tablename__ = "address"
 
-    adress_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    adress = mapped_column(JSON)
-    patient = relationship("Patient", back_populates="adress")
+    address_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    address = mapped_column(JSON)
+    patient = relationship("Patient", back_populates="address")
 
 
 doctor_patient = Table(
@@ -84,8 +84,8 @@ class Patient(Base):
     scholing: Mapped[Scholing | None]
     employee: Mapped[bool | None]
     married: Mapped[bool | None]
-    adress_id: Mapped[int] = mapped_column(ForeignKey("adress.adress_id"))
-    adress: Mapped[Adress] = relationship(back_populates="patient", cascade="all, delete")
+    address_id: Mapped[int] = mapped_column(ForeignKey("address.address_id"))
+    address: Mapped[Address] = relationship(back_populates="patient", cascade="all, delete")
     measure_cvs: Mapped[list["CardiovascularParameter"]] = relationship(
         back_populates="patient", cascade="all, delete"
     )
