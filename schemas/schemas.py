@@ -8,6 +8,7 @@ from models.models import Gender, Scholing
 class EmailSchema(BaseModel):
     email_address: EmailStr
     email_verify: bool = False
+    code: int
     doctor_id: str
 
 
@@ -16,7 +17,7 @@ class AddressSchema(BaseModel):
     address: dict
 
 
-class DoctorOut(BaseModel):
+class Doctor(BaseModel):
     doctor_id: str
     first_name: str
     second_name: str | None = None
@@ -26,7 +27,11 @@ class DoctorOut(BaseModel):
     email_address: str | None = None
 
 
-class DoctorIn(DoctorOut):
+class DoctorOut(Doctor):
+    email_verify: bool
+
+
+class DoctorIn(Doctor):
     password: str
 
 
@@ -47,7 +52,7 @@ class DoctorUp(BaseModel):
         return value
 
 
-class Patient(BaseModel):
+class PatientIn(BaseModel):
     patient_id: str
     first_name: str
     second_name: str | None = None
@@ -59,7 +64,11 @@ class Patient(BaseModel):
     scholing: Scholing | None = None
     employee: bool | None = None
     married: bool | None = None
-    adress_id: int
+    adress: dict | None = None
+
+
+class PatientOut(PatientIn):
+    doctor_id: int
 
 
 class DoctorPatient(BaseModel):
