@@ -1,7 +1,7 @@
 import enum
 from datetime import datetime as dt
 
-from sqlalchemy import Enum, create_engine, ForeignKey, func, Table, Column
+from sqlalchemy import Enum, create_engine, ForeignKey, func, Table, Column, UniqueConstraint
 from sqlalchemy.types import String, BLOB, DateTime, JSON
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker, relationship
 
@@ -29,7 +29,8 @@ class Email(Base):
     email_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     email_address: Mapped[str] = mapped_column(String(30))
     email_verify: Mapped[bool] = mapped_column(default=False)
-    doctor_id: Mapped[str] = mapped_column(String(30), ForeignKey("doctors.doctor_id"))
+    code: Mapped[int]
+    doctor_id: Mapped[str] = mapped_column(String(30), ForeignKey("doctors.doctor_id", ondelete="CASCADE"))
     doctor = relationship("Doctor", back_populates="email")
 
 
@@ -46,6 +47,7 @@ doctor_patient = Table(
     Base.metadata,
     Column("doctor_id", String(30), ForeignKey("doctors.doctor_id")),
     Column("patient_id", String(30), ForeignKey("patients.patient_id")),
+    UniqueConstraint("doctor_id", "patient_id", name="uix_1"),
 )
 
 
@@ -84,7 +86,7 @@ class Patient(Base):
     scholing: Mapped[Scholing | None]
     employee: Mapped[bool | None]
     married: Mapped[bool | None]
-    address_id: Mapped[int] = mapped_column(ForeignKey("address.address_id"))
+    address_id: Mapped[int | None] = mapped_column(ForeignKey("address.address_id"))
     address: Mapped[Address] = relationship(back_populates="patient", cascade="all, delete")
     measure_cvs: Mapped[list["CardiovascularParameter"]] = relationship(
         back_populates="patient", cascade="all, delete"
