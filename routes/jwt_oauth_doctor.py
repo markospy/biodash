@@ -45,10 +45,10 @@ def get_password_hash(password):
 
 
 def get_user(doctor_id: str, db: Session):
-    doctor = db.scalars(select(Doctor).where(Doctor.doctor_id == doctor_id)).one_or_none()
+    doctor = db.scalars(select(Doctor).where(Doctor.id == doctor_id)).one_or_none()
     if doctor:
         return DoctorIn(
-            doctor_id=doctor.doctor_id,
+            id=doctor.id,
             first_name=doctor.first_name,
             second_name=doctor.second_name,
             last_name=doctor.last_name,
@@ -111,9 +111,9 @@ def login_for_access_token(
     if not doctor:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect doctor_id or password",
+            detail="Incorrect doctor's id or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(data={"sub": doctor.doctor_id}, expires_delta=access_token_expires)
+    access_token = create_access_token(data={"sub": doctor.id}, expires_delta=access_token_expires)
     return {"access_token": access_token, "token_type": "bearer"}
