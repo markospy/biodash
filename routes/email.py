@@ -21,13 +21,13 @@ def send_code(
     db: Session = Depends(get_db),
 ):
     """**Verify the email of the authenticated doctor with the code sent to the email**"""
-    stmt = select(Email).where(Email.doctor_id == current_doctor.doctor_id)
+    stmt = select(Email).where(Email.doctor_id == current_doctor.id)
     email_bd = db.scalars(stmt).first()
     if email_bd.email_verify:
         return JSONResponse(content={"message": "The email is already verified"})
     if code != email_bd.code:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail={"error": "The code is invalid"})
-    stmt = update(Email).where(Email.doctor_id == current_doctor.doctor_id).values(email_verify=True)
+    stmt = update(Email).where(Email.doctor_id == current_doctor.id).values(email_verify=True)
     db.execute(stmt)
     db.commit()
     return JSONResponse(content={"message": "The email is already verified"})
@@ -39,12 +39,12 @@ def request_code(
     db: Session = Depends(get_db),
 ):
     """**Send a new validation email to the doctor's registered email**"""
-    stmt = select(Email).where(Email.doctor_id == current_doctor.doctor_id)
+    stmt = select(Email).where(Email.doctor_id == current_doctor.id)
     email_bd = db.scalars(stmt).first()
     if email_bd.email_verify:
         return JSONResponse(content={"message": "The email is already verified"})
     code = send_email(current_doctor.first_name, email_bd.email_address)
-    stmt = update(Email).where(Email.doctor_id == current_doctor.doctor_id).values(code=code)
+    stmt = update(Email).where(Email.doctor_id == current_doctor.id).values(code=code)
     db.execute(stmt)
     db.commit()
     return JSONResponse(content={"message": "A new verification code has been sent to your inbox"})
