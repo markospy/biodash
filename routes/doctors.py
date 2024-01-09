@@ -20,26 +20,29 @@ def register_doctor(
     doctor: DoctorIn,
     db: Session = Depends(get_db),
 ):
-    """**Register a new doctor**"""
-    stmt = select(Doctor).where(Doctor.doctor_id == doctor.doctor_id)
+    """**Register a new doctor**
+
+    If you submit an email address, a verification code will be sent to your inbox.
+    """
+    stmt = select(Doctor).where(Doctor.id == doctor.id)
     result = db.scalars(stmt).first()
     if result:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail={"error": "Doctor already exists", "doctor_id": doctor.doctor_id},
+            detail={"error": "Doctor already exists", "id": doctor.id},
         )
     doctor_bd = doctor.__dict__
     doctor_bd.update(password=get_password_hash(doctor_bd["password"]))
     if doctor_bd["email_address"]:
         code = send_email(doctor_bd["first_name"], doctor_bd["email_address"])
         email = EmailSchema(
-            email_address=doctor_bd["email_address"], doctor_id=doctor_bd["doctor_id"], code=code
+            email_address=doctor_bd["email_address"], doctor_id=doctor_bd["id"], code=code
         ).model_dump()
         db.add(Email(**email))
     del doctor_bd["email_address"]
     db.add(Doctor(**doctor_bd))
     db.commit()
-    return JSONResponse({"message": "Doctor registration successful", "doctor_id": doctor.doctor_id})
+    return JSONResponse({"message": "Doctor registration successful", "id": doctor.id})
 
 
 @router.get("/me", response_model=DoctorOut)
@@ -50,7 +53,7 @@ def get_doctor(
     """**Get information about the currently authenticated doctor**"""
     doctor_data = current_doctor.__dict__
     doctor = {key: value for key, value in doctor_data.items() if value is not None or key == "password"}
-    stmt = select(Email).where(Email.doctor_id == current_doctor.doctor_id)
+    stmt = select(Email).where(Email.doctor_id == current_doctor.id)
     email = db.scalars(stmt).first()
     doctor["email_address"] = email.email_address
     doctor["email_verify"] = email.email_verify
@@ -68,19 +71,21 @@ def update_doctor(
 
     If you put the string 'null' as the value of any parameter, the corresponding field
     in the database will be set to Null. It is useful to eliminate incorrect data from
-    the database. A value of 'null' will not be accepted for first_name or doctor_id.
+    the database. A value of 'null' will not be accepted for first_name or id.
+
+    If you update your email address, a verification code will be sent to your inbox.
     """
-    stmt = select(Doctor).where(Doctor.doctor_id == current_doctor.doctor_id)
+    stmt = select(Doctor).where(Doctor.id == current_doctor.id)
     result = db.scalars(stmt).first()
     if not result:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"error": "Doctor not found", "doctor_id": doctor.doctor_id},
+            detail={"error": "Doctor not found", "id": doctor.id},
         )
-    if doctor.doctor_id == "null" or doctor.first_name == "null":
+    if doctor.id == "null" or doctor.first_name == "null":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"error": "You must provide a valid data for first_name and doctor_id"},
+            detail={"error": "You must provide a valid data for first_name and id"},
         )
 
     doctor_data = doctor.model_dump(exclude_unset=True)
@@ -90,25 +95,25 @@ def update_doctor(
             name = updated_data["first_name"]
         else:
             name = result.first_name
-        if updated_data.get("doctor_id"):
-            id = updated_data["doctor_id"]
+        if updated_data.get("id"):
+            id = updated_data["id"]
         else:
-            id = result.doctor_id
-        stmt = select(Email).where(Email.doctor_id == current_doctor.doctor_id)
+            id = result.id
+        stmt = select(Email).where(Email.doctor_id == current_doctor.id)
         email_bd = db.scalar(stmt).email_address
         if email_bd != updated_data["email_address"]:
             code = send_email(name, updated_data["email_address"])
             email = EmailSchema(
                 email_address=updated_data["email_address"], doctor_id=id, email_verify=False, code=code
             ).model_dump()
-            stmt = update(Email).where(Email.doctor_id == current_doctor.doctor_id).values(**email)
+            stmt = update(Email).where(Email.doctor_id == current_doctor.id).values(**email)
             db.execute(stmt)
         del updated_data["email_address"]
     if doctor.password and not verify_password(doctor.password, result.password):
         updated_data.update(password=get_password_hash(doctor.password))
     else:
         updated_data.update(password=result.password)
-    stmt = update(Doctor).where(Doctor.doctor_id == current_doctor.doctor_id).values(**updated_data)
+    stmt = update(Doctor).where(Doctor.id == current_doctor.id).values(**updated_data)
     db.execute(stmt)
     db.commit()
     return JSONResponse({"message": "Doctor data was updated successfully."})
@@ -120,7 +125,7 @@ def delete_doctor(
     db: Session = Depends(get_db),
 ):
     """**Delete the currently authenticated doctor**"""
-    stmt = delete(Doctor).where(Doctor.doctor_id == current_doctor.doctor_id)
+    stmt = delete(Doctor).where(Doctor.id == current_doctor.id)
     db.execute(stmt)
     db.commit()
-    return JSONResponse({"message": f"Doctor with ID {current_doctor.doctor_id} has been successfully deleted."})
+    return JSONResponse({"message": f"Doctor with ID {current_doctor.id} has been successfully deleted."})
