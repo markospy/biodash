@@ -26,18 +26,18 @@ class Scholing(enum.Enum):
 class Email(Base):
     __tablename__ = "email"
 
-    email_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     email_address: Mapped[str] = mapped_column(String(30))
     email_verify: Mapped[bool] = mapped_column(default=False)
     code: Mapped[int]
-    doctor_id: Mapped[str] = mapped_column(String(30), ForeignKey("doctors.doctor_id", ondelete="CASCADE"))
+    doctor_id: Mapped[str] = mapped_column(String(30), ForeignKey("doctors.id", ondelete="CASCADE"))
     doctor = relationship("Doctor", back_populates="email")
 
 
 class Address(Base):
     __tablename__ = "address"
 
-    address_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     address = mapped_column(JSON)
     patient = relationship("Patient", back_populates="address")
 
@@ -45,8 +45,8 @@ class Address(Base):
 doctor_patient = Table(
     "doctor_patient",
     Base.metadata,
-    Column("doctor_id", String(30), ForeignKey("doctors.doctor_id")),
-    Column("patient_id", String(30), ForeignKey("patients.patient_id")),
+    Column("doctor_id", String(30), ForeignKey("doctors.id")),
+    Column("patient_id", String(30), ForeignKey("patients.id")),
     UniqueConstraint("doctor_id", "patient_id", name="uix_1"),
 )
 
@@ -54,14 +54,16 @@ doctor_patient = Table(
 class Doctor(Base):
     __tablename__ = "doctors"
 
-    doctor_id: Mapped[str] = mapped_column(String(30), primary_key=True)
+    id: Mapped[str] = mapped_column(String(30), primary_key=True)
     first_name: Mapped[str] = mapped_column(String(30))
     second_name: Mapped[str | None] = mapped_column(String(30))
     last_name: Mapped[str | None] = mapped_column(String(30))
     specialty: Mapped[str | None] = mapped_column(String(30))
     password: Mapped[str] = mapped_column(String(255))
     portrait: Mapped[str | None] = mapped_column(String(100))
-    patients: Mapped[list["Patient"]] = relationship(secondary=doctor_patient, cascade="all, delete")
+    patients: Mapped[list["Patient"]] = relationship(
+        secondary=doctor_patient, cascade="all, delete", back_populates="doctors"
+    )
     email = relationship("Email", back_populates="doctor", cascade="all, delete")
 
     measure_cvs: Mapped[list["CardiovascularParameter"]] = relationship(
@@ -75,7 +77,7 @@ class Doctor(Base):
 class Patient(Base):
     __tablename__ = "patients"
 
-    patient_id: Mapped[str] = mapped_column(String(30), primary_key=True)
+    id: Mapped[str] = mapped_column(String(30), primary_key=True)
     first_name: Mapped[str] = mapped_column(String(30))
     second_name: Mapped[str | None] = mapped_column(String(30))
     last_name: Mapped[str | None] = mapped_column(String(30))
@@ -86,7 +88,10 @@ class Patient(Base):
     scholing: Mapped[Scholing | None]
     employee: Mapped[bool | None]
     married: Mapped[bool | None]
-    address_id: Mapped[int | None] = mapped_column(ForeignKey("address.address_id"))
+    doctors: Mapped[list["Doctor"]] = relationship(
+        secondary=doctor_patient, cascade="all, delete", back_populates="patients"
+    )
+    address_id: Mapped[int | None] = mapped_column(ForeignKey("address.id"))
     address: Mapped[Address] = relationship(back_populates="patient", cascade="all, delete")
     measure_cvs: Mapped[list["CardiovascularParameter"]] = relationship(
         back_populates="patient", cascade="all, delete"
@@ -103,10 +108,8 @@ class CardiovascularParameter(Base):
     systolic: Mapped[int] = mapped_column(default=120)
     diastolic: Mapped[int] = mapped_column(default=80)
     heart_rate: Mapped[int | None] = mapped_column(default=None)
-    patient_id: Mapped[str] = mapped_column(
-        ForeignKey("patients.patient_id", ondelete="CASCADE"), primary_key=True
-    )
-    doctor_id: Mapped[str] = mapped_column(ForeignKey("doctors.doctor_id", ondelete="CASCADE"))
+    patient_id: Mapped[str] = mapped_column(ForeignKey("patients.id", ondelete="CASCADE"), primary_key=True)
+    doctor_id: Mapped[str] = mapped_column(ForeignKey("doctors.id", ondelete="CASCADE"))
     patient = relationship("Patient", back_populates="measure_cvs")
     doctor = relationship("Doctor", back_populates="measure_cvs")
 
@@ -116,10 +119,8 @@ class BloodSugarLevel(Base):
 
     date = mapped_column(DateTime(timezone=True), primary_key=True)
     value = Mapped[float]
-    patient_id: Mapped[str] = mapped_column(
-        ForeignKey("patients.patient_id", ondelete="CASCADE"), primary_key=True
-    )
-    doctor_id: Mapped[str] = mapped_column(ForeignKey("doctors.doctor_id", ondelete="CASCADE"))
+    patient_id: Mapped[str] = mapped_column(ForeignKey("patients.id", ondelete="CASCADE"), primary_key=True)
+    doctor_id: Mapped[str] = mapped_column(ForeignKey("doctors.id", ondelete="CASCADE"))
     patient = relationship("Patient", back_populates="measure_blood_sugar")
     doctor = relationship("Doctor", back_populates="measure_blood_sugar")
 
