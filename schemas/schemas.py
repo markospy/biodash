@@ -18,7 +18,7 @@ class AddressSchema(BaseModel):
 
 
 class Doctor(BaseModel):
-    doctor_id: str
+    id: str
     first_name: str
     second_name: str | None = None
     last_name: str | None = None
@@ -36,7 +36,7 @@ class DoctorIn(Doctor):
 
 
 class DoctorUp(BaseModel):
-    doctor_id: str | None = None
+    id: str | None = None
     first_name: str | None = None
     second_name: str | None = None
     last_name: str | None = None
@@ -53,7 +53,7 @@ class DoctorUp(BaseModel):
 
 
 class PatientIn(BaseModel):
-    patient_id: str
+    id: str
     first_name: str
     second_name: str | None = None
     last_name: str | None = None
@@ -68,7 +68,7 @@ class PatientIn(BaseModel):
 
 
 class PatientOut(PatientIn):
-    doctor_id: int
+    id: int
 
 
 class DoctorPatient(BaseModel):
