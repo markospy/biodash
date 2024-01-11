@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from models.models import BloodPressure, User
 from dependencies.dependencies import get_db
 from schemas.schemas import BloodPressureSchema
-from routes.jwt_oauth_user import get_current_user
+from routes.jwt_oauth_doctor import get_current_user
 
 router = APIRouter(prefix="/blood_pressure", tags=["Blood pressure"])
 
@@ -44,9 +44,7 @@ def get_all_measurements(
     stmt = select(BloodPressure).where(BloodPressure.patient_id == patient_id)
     results = db.scalars(stmt).all()
     if not results:
-        raise HTTPException(
-            status_code=404, detail=f"The patient with id {patient_id} has no records"
-        )
+        raise HTTPException(status_code=404, detail=f"The patient with id {patient_id} has no records")
     return [
         BloodPressureSchema(
             systolic=measurement.systolic,
@@ -67,9 +65,7 @@ def update_measurement(
     measurement: BloodPressureSchema,
     db: Session = Depends(get_db),
 ):
-    stmt = select(BloodPressure).where(
-        and_(BloodPressure.patient_id == patient_id, BloodPressure.date == date)
-    )
+    stmt = select(BloodPressure).where(and_(BloodPressure.patient_id == patient_id, BloodPressure.date == date))
     result = db.scalars(stmt).all()
     if not result:
         raise HTTPException(status_code=404, detail="There are no registered patients")
@@ -94,24 +90,14 @@ def delete_all_measurements(
         stmt = select(BloodPressure).where(BloodPressure.id == patient_id)
         result = db.scalars(stmt).all()
         if not result:
-            raise HTTPException(
-                status_code=404, detail="There are no registered patients"
-            )
+            raise HTTPException(status_code=404, detail="There are no registered patients")
         stmt = delete(BloodPressure).where(BloodPressure.patient_id == patient_id)
     else:
-        stmt = select(BloodPressure).where(
-            and_(BloodPressure.id == patient_id, BloodPressure.date == date)
-        )
+        stmt = select(BloodPressure).where(and_(BloodPressure.id == patient_id, BloodPressure.date == date))
         result = db.scalars(stmt).all()
         if not result:
-            raise HTTPException(
-                status_code=404, detail="There are no registered patients"
-            )
-        stmt = delete(BloodPressure).where(
-            and_(BloodPressure.id == patient_id, BloodPressure.date == date)
-        )
+            raise HTTPException(status_code=404, detail="There are no registered patients")
+        stmt = delete(BloodPressure).where(and_(BloodPressure.id == patient_id, BloodPressure.date == date))
     db.execute(stmt)
     db.commit()
-    return JSONResponse(
-        f"Patient measurements with id {patient_id} have been successfully deleted."
-    )
+    return JSONResponse(f"Patient measurements with id {patient_id} have been successfully deleted.")
