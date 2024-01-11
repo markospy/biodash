@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from dependencies.dependencies import get_db
 from models.models import BloodPressure, User
 from schemas.schemas import AnalizeBloodPressure
-from routes.jwt_oauth_user import get_current_user
+from routes.jwt_oauth_doctor import get_current_user
 
 router = APIRouter(prefix="/analize", tags=["Analize"])
 
