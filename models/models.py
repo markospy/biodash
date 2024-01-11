@@ -45,8 +45,8 @@ class Address(Base):
 doctor_patient = Table(
     "doctor_patient",
     Base.metadata,
-    Column("doctor_id", String(30), ForeignKey("doctors.id")),
-    Column("patient_id", String(30), ForeignKey("patients.id")),
+    Column("doctor_id", String(30), ForeignKey("doctors.id", ondelete="CASCADE")),
+    Column("patient_id", String(30), ForeignKey("patients.id", ondelete="CASCADE")),
     UniqueConstraint("doctor_id", "patient_id", name="uix_1"),
 )
 
