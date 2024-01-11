@@ -55,8 +55,12 @@ def get_doctor(
     doctor = {key: value for key, value in doctor_data.items() if value is not None or key == "password"}
     stmt = select(Email).where(Email.doctor_id == current_doctor.id)
     email = db.scalars(stmt).first()
-    doctor["email_address"] = email.email_address
-    doctor["email_verify"] = email.email_verify
+    if email:
+        doctor["email_address"] = email.email_address
+        doctor["email_verify"] = email.email_verify
+    else:
+        doctor["email_address"] = None
+        doctor["email_verify"] = False
     return DoctorOut(**doctor)
 
 
@@ -129,3 +133,10 @@ def delete_doctor(
     db.execute(stmt)
     db.commit()
     return JSONResponse({"message": f"Doctor with ID {current_doctor.id} has been successfully deleted."})
+
+
+# ON DELETE CASCADE
+# The desired effect was cascading deletion of patients when deleting a doctor record.
+# However, when I delete a doctor, the patients that are no longer associated with the
+# doctor that have just been deleted remain, since the record in the union table is
+# deleted: doctor_patient
