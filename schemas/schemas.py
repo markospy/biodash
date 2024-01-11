@@ -52,7 +52,7 @@ class DoctorUp(BaseModel):
         return value
 
 
-class PatientIn(BaseModel):
+class PatientSchema(BaseModel):
     id: str
     first_name: str
     second_name: str | None = None
@@ -64,11 +64,7 @@ class PatientIn(BaseModel):
     scholing: Scholing | None = None
     employee: bool | None = None
     married: bool | None = None
-    adress: dict | None = None
-
-
-class PatientOut(PatientIn):
-    id: int
+    address: dict | None = None
 
 
 class DoctorPatient(BaseModel):
