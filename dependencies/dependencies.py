@@ -1,3 +1,5 @@
+# This module manages the connection with the database.
+
 from models.models import session_local
 
 
