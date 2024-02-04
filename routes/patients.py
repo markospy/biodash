@@ -4,12 +4,12 @@ from enum import Enum
 from fastapi import APIRouter, Depends, status
 from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse
-from sqlalchemy import select, delete, update, and_, func
+from sqlalchemy import select, delete, update, and_, asc, desc
 from sqlalchemy.orm import Session
 
 from models.models import Patient, Doctor, Address, doctor_patient
 from dependencies.dependencies import get_db
-from schemas.schemas import PatientSchema
+from schemas.schemas import PatientSchema, PatientUp
 from routes.jwt_oauth_doctor import get_current_user
 
 
@@ -46,11 +46,15 @@ def add_patient(
     you will be asked to add it from the 'add existing patient' endpoint
     """
     stmt = (
-        select(Patient).join(Patient.doctors).where(and_(Patient.id == patient.id, Doctor.id == current_doctor.id))
+        select(Patient)
+        .join(Patient.doctors)
+        .where(and_(Patient.id == patient.id, Doctor.id == current_doctor.id))
     )
     patient_db = db.scalars(stmt).first()
     if patient_db:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="This patient already exists.")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="This patient already exists."
+        )
 
     stmt = select(Patient).where(Patient.id == patient.id)
     patient_db = db.scalars(stmt).first()
@@ -65,7 +69,9 @@ def add_patient(
 
     patient_dict = patient.model_dump(exclude_unset=True)
     if patient_dict.get("address"):
-        address_db = db.scalars(select(Address).where(Address.address == patient_dict["address"])).first()
+        address_db = db.scalars(
+            select(Address).where(Address.address == patient_dict["address"])
+        ).first()
         if not address_db:
             address = Address(address=patient_dict["address"])
             db.add(address)
@@ -77,9 +83,15 @@ def add_patient(
         patient_dict["address_id"] = None
     del patient_dict["address"]
     db.add(Patient(**patient_dict))
-    db.execute(doctor_patient.insert().values(patient_id=patient_dict["id"], doctor_id=current_doctor.id))
+    db.execute(
+        doctor_patient.insert().values(
+            patient_id=patient_dict["id"], doctor_id=current_doctor.id
+        )
+    )
     db.commit()
-    return JSONResponse({"message": "Patient registration successful", "id": patient_dict["id"]})
+    return JSONResponse(
+        {"message": "Patient registration successful", "id": patient_dict["id"]}
+    )
 
 
 @router.post("/add_existing_patient")
@@ -93,21 +105,32 @@ def add_patient(
     consultation.
     """
     stmt = (
-        select(Patient).join(Patient.doctors).where(and_(Patient.id == patient_id, Doctor.id == current_doctor.id))
+        select(Patient)
+        .join(Patient.doctors)
+        .where(and_(Patient.id == patient_id, Doctor.id == current_doctor.id))
     )
     patient_db = db.scalars(stmt).first()
     if patient_db:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="This patient is already registered.")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This patient is already registered.",
+        )
 
     stmt = select(Patient).where(Patient.id == patient_id)
     patient_db = db.scalars(stmt).first()
     if not patient_db:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="This patient does not exist.")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="This patient does not exist."
+        )
 
-    stmt = doctor_patient.insert().values(patient_id=patient_id, doctor_id=current_doctor.id)
+    stmt = doctor_patient.insert().values(
+        patient_id=patient_id, doctor_id=current_doctor.id
+    )
     db.execute(stmt)
     db.commit()
-    return JSONResponse({"message": "Patient registration successful", "id": patient_id})
+    return JSONResponse(
+        {"message": "Patient registration successful", "id": patient_id}
+    )
 
 
 @router.get("/patient", response_model=list[PatientSchema])
@@ -128,7 +151,10 @@ def get_patient(
         )
         patient_db = db.scalars(stmt).first()
         if not patient_db:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="This patient is not registered")
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="This patient is not registered",
+            )
         patient_db = patient_db.__dict__
         if patient_db.get("address_id"):
             stmt = select(Address).where(Address.id == patient_db["address_id"])
@@ -137,17 +163,51 @@ def get_patient(
                 patient_db["address"] = address.address
         return [PatientSchema(**patient_db)]
 
-    stmt = (
-        select(Patient)
-        .join(Patient.doctors)
-        .where(Doctor.id == current_doctor.id)
-        .order_by(order(filter))
-        .offset(offset)
-        .limit(limit)
-    )
+    match filter:
+        case SortBy.first_name:
+            filter = Patient.first_name
+        case SortBy.second_name:
+            filter = Patient.second_name
+        case SortBy.last_name:
+            filter = Patient.last_name
+        case SortBy.birth_date:
+            filter = Patient.birth_date
+        case SortBy.height:
+            filter = Patient.height
+        case SortBy.weight:
+            filter = Patient.weight
+        case SortBy.scholing:
+            filter = Patient.scholing
+        case SortBy.employee:
+            filter = Patient.employee
+        case SortBy.married:
+            filter = Patient.married
+
+    if order == Order.asc:
+        stmt = (
+            select(Patient)
+            .join(Patient.doctors)
+            .where(Doctor.id == current_doctor.id)
+            .order_by(asc(filter))
+            .offset(offset)
+            .limit(limit)
+        )
+    else:
+        stmt = (
+            select(Patient)
+            .join(Patient.doctors)
+            .where(Doctor.id == current_doctor.id)
+            .order_by(desc(filter))
+            .offset(offset)
+            .limit(limit)
+        )
+
     patients_db = db.scalars(stmt).all()
     if not patients_db:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="There are no registered patients")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="There are no registered patients",
+        )
     patients_list = []
     for patient_db in patients_db:
         patient_db = patient_db.__dict__
@@ -160,27 +220,55 @@ def get_patient(
     return patients_list
 
 
-# @router.put("/modify")
-# def update_patient(
-#     current_user: Annotated[User, Depends(get_current_user)],
-#     patient_id: int,
-#     patient: PatientSchema,
-#     db: Session = Depends(get_db),
-# ):
-#     stmt = select(Patient).where(and_(Patient.id == patient_id, Patient.doctor == current_user.username))
-#     result = db.scalars(stmt).all()
-#     if not result:
-#         raise HTTPException(status_code=404, detail="There are no registered patients")
-#     stmt = (
-#         update(Patient)
-#         .where(and_(Patient.id == patient_id, Patient.doctor == current_user.username))
-#         .values(**patient.model_dump())
-#     )
-#     db.execute(stmt)
-#     db.commit()
-#     return JSONResponse(
-#         f"The info of the patient {patient.first_name} {patient.last_name} has been changed successfully."
-#     )
+@router.put("/modify")
+def update_patient(
+    current_doctor: Annotated[Doctor, Depends(get_current_user)],
+    patient_id: str,
+    patient: PatientUp,
+    db: Session = Depends(get_db),
+):
+    stmt = (
+        select(Patient)
+        .join(Patient.doctors)
+        .where(and_(Patient.id == patient_id, Doctor.id == current_doctor.id))
+    )
+    patient_db = db.scalars(stmt).first()
+    if not patient_db:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This patient is not registered",
+        )
+    patient_dict = patient.model_dump(exclude_unset=True)
+    if patient_dict.get("address"):
+        address_db = db.scalars(
+            select(Address).where(Address.id == patient_db.address_id)
+        ).first()
+
+        if not address_db:
+            address = Address(address=patient_dict["address"])
+            db.add(address)
+            db.flush()
+            patient_dict["address_id"] = address.id
+        else:
+            stmt = (
+                update(Address)
+                .where(Address.id == patient_db.address_id)
+                .values(address=patient_dict["address"])
+            )
+            db.execute(stmt)
+    del patient_dict["address"]
+    stmt = update(Patient).where(Patient.id == patient_id).values(**patient_dict)
+    if patient_dict.get("id"):
+        db.execute(
+            doctor_patient.update()
+            .where(doctor_patient.c.patient_id == patient_id)
+            .values(patient_id=patient_dict["id"], doctor_id=current_doctor.id)
+        )
+    db.execute(stmt)
+    db.commit()
+    return JSONResponse(
+        f"The info of the patient {patient.id} has been changed successfully."
+    )
 
 
 @router.delete("/delete")
@@ -190,11 +278,15 @@ def delete_patient(
     db: Session = Depends(get_db),
 ):
     stmt = (
-        select(Patient).join(Patient.doctors).where(and_(Patient.id == patient_id, Doctor.id == current_doctor.id))
+        select(Patient)
+        .join(Patient.doctors)
+        .where(and_(Patient.id == patient_id, Doctor.id == current_doctor.id))
     )
     patient_db = db.scalars(stmt).first()
     if not patient_db:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="This patient does not exist.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="This patient does not exist."
+        )
 
     stmt = doctor_patient.select().where(doctor_patient.c.patient_id == patient_id)
     result = len(db.scalars(stmt).all())
@@ -203,7 +295,10 @@ def delete_patient(
         db.execute(stmt)
 
     stmt = doctor_patient.delete().where(
-        and_(doctor_patient.c.patient_id == patient_id, doctor_patient.c.doctor_id == current_doctor.id)
+        and_(
+            doctor_patient.c.patient_id == patient_id,
+            doctor_patient.c.doctor_id == current_doctor.id,
+        )
     )
     db.execute(stmt)
     db.commit()
