@@ -36,7 +36,9 @@ def register_doctor(
     if doctor_bd["email_address"]:
         code = send_email(doctor_bd["first_name"], doctor_bd["email_address"])
         email = EmailSchema(
-            email_address=doctor_bd["email_address"], doctor_id=doctor_bd["id"], code=code
+            email_address=doctor_bd["email_address"],
+            doctor_id=doctor_bd["id"],
+            code=code,
         ).model_dump()
         db.add(Email(**email))
     del doctor_bd["email_address"]
@@ -52,7 +54,11 @@ def get_doctor(
 ):
     """**Get information about the currently authenticated doctor**"""
     doctor_data = current_doctor.__dict__
-    doctor = {key: value for key, value in doctor_data.items() if value is not None or key == "password"}
+    doctor = {
+        key: value
+        for key, value in doctor_data.items()
+        if value is not None or key == "password"
+    }
     stmt = select(Email).where(Email.doctor_id == current_doctor.id)
     email = db.scalars(stmt).first()
     if email:
@@ -108,9 +114,16 @@ def update_doctor(
         if email_bd != updated_data["email_address"]:
             code = send_email(name, updated_data["email_address"])
             email = EmailSchema(
-                email_address=updated_data["email_address"], doctor_id=id, email_verify=False, code=code
+                email_address=updated_data["email_address"],
+                doctor_id=id,
+                email_verify=False,
+                code=code,
             ).model_dump()
-            stmt = update(Email).where(Email.doctor_id == current_doctor.id).values(**email)
+            stmt = (
+                update(Email)
+                .where(Email.doctor_id == current_doctor.id)
+                .values(**email)
+            )
             db.execute(stmt)
         del updated_data["email_address"]
     if doctor.password and not verify_password(doctor.password, result.password):
@@ -132,7 +145,11 @@ def delete_doctor(
     stmt = delete(Doctor).where(Doctor.id == current_doctor.id)
     db.execute(stmt)
     db.commit()
-    return JSONResponse({"message": f"Doctor with ID {current_doctor.id} has been successfully deleted."})
+    return JSONResponse(
+        {
+            "message": f"Doctor with ID {current_doctor.id} has been successfully deleted."
+        }
+    )
 
 
 # ON DELETE CASCADE

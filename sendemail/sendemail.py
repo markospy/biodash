@@ -68,7 +68,9 @@ class EmailSenderClass:
         # Add text to message
         msg.attach(MIMEText(txt, "html"))
 
-        print("Send email from {} to {}".format(self.fromaddr, destinationAddress))
+        print(
+            "Send email from {} to {}".format(self.fromaddr, destinationAddress)
+        )
         self.sendMessageViaServer(destinationAddress, msg)
 
 
@@ -76,8 +78,8 @@ def send_email(name: str, email: str) -> int:
     """Send a verification code to the user's email and return the code
 
     Args:
-        data (dict): Dictionary with doctor information
-
+        name (str): User's name
+        email (str): User's email
 
     Returns:
         int: Verification code
