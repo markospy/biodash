@@ -35,15 +35,9 @@ class DoctorIn(Doctor):
     password: str
 
 
-class DoctorUp(BaseModel):
+class DoctorUp(Doctor):
     id: str | None = None
     first_name: str | None = None
-    second_name: str | None = None
-    last_name: str | None = None
-    specialty: str | None = None
-    portrait: str | None = None
-    password: str | None = None
-    email_address: str | None = None
 
     @validator("*", pre=True, allow_reuse=True)
     def check_null_values(cls, value):
@@ -65,6 +59,17 @@ class PatientSchema(BaseModel):
     employee: bool | None = None
     married: bool | None = None
     address: dict | None = None
+
+
+class PatientUp(PatientSchema):
+    id: str | None = None
+    first_name: str | None = None
+
+    @validator("*", pre=True, allow_reuse=True)
+    def check_null_values(cls, value):
+        if value == "null":
+            return None
+        return value
 
 
 class DoctorPatient(BaseModel):
