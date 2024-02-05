@@ -93,8 +93,8 @@ class CardiovascularParameter(CardiovascularParameterOut):
 
 
 class BloodSugarLevelOut(BaseModel):
-    date: datetime
-    value: float
+    date: datetime | None = None
+    value: float | None = None
 
 
 class BloodSugarLevelIn(BloodSugarLevelOut):
