@@ -2,102 +2,101 @@ from typing import Annotated
 from datetime import datetime
 
 from fastapi import APIRouter, Depends
-from fastapi.exceptions import HTTPException
-from fastapi.responses import JSONResponse
-from sqlalchemy import select, delete, update, and_
 from sqlalchemy.orm import Session
 
-from models.models import BloodPressure, User
+from models.models import Doctor
+from models.models import CardiovascularParameter as cvpm
 from dependencies.dependencies import get_db
-from schemas.schemas import BloodPressureSchema
+from schemas.schemas import CardiovascularParameter as cvps
+from schemas.schemas import CardiovascularParameterOut as cvpsOut
 from routes.jwt_oauth_doctor import get_current_user
+from cruds.measures import (
+    add_measurement,
+    get_all_measurements,
+    delete_all_measurements,
+    update_measurement,
+)
+
+
+def manage_null_values(measurement: cvpsOut, result):
+    if measurement.systolic == None:
+        measurement.systolic = result.systolic
+    if measurement.diastolic == None:
+        measurement.diastolic = result.diastolic
+    if measurement.heart_rate == None:
+        measurement.heart_rate = result.heart_rate
+    if measurement.date == None:
+        measurement.date = result.date
+    return (
+        measurement.systolic,
+        measurement.diastolic,
+        measurement.heart_rate,
+        measurement.date,
+    )
+
 
 router = APIRouter(prefix="/blood_pressure", tags=["Blood pressure"])
 
 
 @router.post("/add")
-def add_measurement(
-    current_user: Annotated[User, Depends(get_current_user)],
-    measurement: BloodPressureSchema,
+def add(
+    current_doctor: Annotated[Doctor, Depends(get_current_user)],
+    measurement: cvps,
     db: Session = Depends(get_db),
 ):
-    stmt = select(BloodPressure).where(
-        and_(
-            BloodPressure.patient_id == measurement.patient_id,
-            BloodPressure.date == measurement.date,
-        )
-    )
-    result = db.execute(stmt).first()
-    if result:
-        raise HTTPException(status_code=409, detail="Measurement already exists.")
-    db.add(BloodPressure(**measurement.model_dump()))
-    db.commit()
-    return JSONResponse("The measurement was saved correctly")
+    """**Adds a new measurement of the main cardiovascular parameters**"""
+    add_measurement(measurement, model_db=cvpm, db=db)
 
 
-@router.get("/{patient_id}/all_measurements", response_model=list[BloodPressureSchema])
-def get_all_measurements(
-    current_user: Annotated[User, Depends(get_current_user)],
-    patient_id: int,
+@router.get(
+    "/{patient_id}/all_measurements",
+    response_model=list[cvpsOut],
+)
+def get(
+    current_doctor: Annotated[Doctor, Depends(get_current_user)],
+    patient_id: str,
     db: Session = Depends(get_db),
 ):
-    stmt = select(BloodPressure).where(BloodPressure.patient_id == patient_id)
-    results = db.scalars(stmt).all()
-    if not results:
-        raise HTTPException(status_code=404, detail=f"The patient with id {patient_id} has no records")
+    """**Obtains all measurements of the patient's cardiovascular parameters**"""
+    measurements = get_all_measurements(patient_id, model_db=cvpm, db=db)
     return [
-        BloodPressureSchema(
+        cvpsOut(
             systolic=measurement.systolic,
             diastolic=measurement.diastolic,
             heart_rate=measurement.heart_rate,
             date=measurement.date,
-            patient_id=measurement.patient_id,
         )
-        for measurement in results
+        for measurement in measurements
     ]
 
 
 @router.put("/{patient_id}_{date}")
-def update_measurement(
-    current_user: Annotated[User, Depends(get_current_user)],
+def update(
+    current_doctor: Annotated[Doctor, Depends(get_current_user)],
     patient_id: int,
     date: datetime,
-    measurement: BloodPressureSchema,
+    measurement: cvpsOut,
     db: Session = Depends(get_db),
 ):
-    stmt = select(BloodPressure).where(and_(BloodPressure.patient_id == patient_id, BloodPressure.date == date))
-    result = db.scalars(stmt).all()
-    if not result:
-        raise HTTPException(status_code=404, detail="There are no registered patients")
-    stmt = (
-        update(BloodPressure)
-        .where(and_(BloodPressure.patient_id == patient_id, BloodPressure.date == date))
-        .values(**measurement.model_dump())
+    """**Update a measurement**"""
+    update_measurement(
+        manage_null_values,
+        patient_id,
+        date,
+        measurement,
+        model_db=cvpm,
+        db=db,
     )
-    db.execute(stmt)
-    db.commit()
-    return JSONResponse("The measurement has been changed successfully.")
 
 
 @router.delete("/delete")
-def delete_all_measurements(
-    current_user: Annotated[User, Depends(get_current_user)],
-    patient_id: int,
+def delete(
+    current_doctor: Annotated[Doctor, Depends(get_current_user)],
+    patient_id: str,
     date: datetime | None = None,
     db: Session = Depends(get_db),
 ):
-    if date:
-        stmt = select(BloodPressure).where(BloodPressure.id == patient_id)
-        result = db.scalars(stmt).all()
-        if not result:
-            raise HTTPException(status_code=404, detail="There are no registered patients")
-        stmt = delete(BloodPressure).where(BloodPressure.patient_id == patient_id)
-    else:
-        stmt = select(BloodPressure).where(and_(BloodPressure.id == patient_id, BloodPressure.date == date))
-        result = db.scalars(stmt).all()
-        if not result:
-            raise HTTPException(status_code=404, detail="There are no registered patients")
-        stmt = delete(BloodPressure).where(and_(BloodPressure.id == patient_id, BloodPressure.date == date))
-    db.execute(stmt)
-    db.commit()
-    return JSONResponse(f"Patient measurements with id {patient_id} have been successfully deleted.")
+    """**Deletes a measurement** for a patient on the specified date and time"""
+    delete_all_measurements(
+        model_db=cvpm, db=db, patient_id=patient_id, date=date
+    )
