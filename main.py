@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from routes import doctors, jwt_oauth_doctor, patients, email
+from routes import blood_pressure, doctors, jwt_oauth_doctor, patients, email
 from models.models import create_tables
 
 
