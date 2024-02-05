@@ -21,7 +21,7 @@ app = FastAPI(lifespan=lifespan)
 
 app.include_router(doctors.router)
 app.include_router(patients.router)
-# app.include_router(blood_pressure.router)
+app.include_router(blood_pressure.router)
 # app.include_router(analize.router)
 app.include_router(email.router)
 app.include_router(jwt_oauth_doctor.router)
@@ -29,4 +29,6 @@ app.include_router(jwt_oauth_doctor.router)
 
 @app.get("/")
 async def root():
-    return {"message": "This aplication can be used to keep track of blood pressure values"}
+    return {
+        "message": "This aplication can be used to keep track of blood pressure values"
+    }
