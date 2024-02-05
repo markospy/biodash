@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field, validator
+from pydantic import BaseModel, EmailStr, validator
 
 from datetime import datetime
 
@@ -78,17 +78,31 @@ class DoctorPatient(BaseModel):
     patient_id: str
 
 
-class CardiovascularParameter(BaseModel):
-    date: datetime
+class CardiovascularParameterOut(BaseModel):
+    systolic: int | None = None
+    diastolic: int | None = None
+    heart_rate: int | None = None
+    date: datetime | None = None
+
+
+class CardiovascularParameter(CardiovascularParameterOut):
     systolic: int = 120
     diastolic: int = 80
-    heart_rate: int | None = None
     patient_id: str
     doctor_id: str
 
 
-class BloodSugarLevel(BaseModel):
+class BloodSugarLevelOut(BaseModel):
     date: datetime
     value: float
+
+
+class BloodSugarLevelIn(BloodSugarLevelOut):
     patient_id: str
     doctor_id: str
+
+
+class AnalizeCardiovascular(BaseModel):
+    systolic: float | None = None
+    diastolic: float | None = None
+    heart_rate: float | None = None
