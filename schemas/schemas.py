@@ -35,9 +35,10 @@ class DoctorIn(Doctor):
     password: str
 
 
-class DoctorUp(Doctor):
+class DoctorUp(DoctorIn):
     id: str | None = None
     first_name: str | None = None
+    password: str | None = None
 
     @validator("*", pre=True, allow_reuse=True)
     def check_null_values(cls, value):
