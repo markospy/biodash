@@ -2,7 +2,15 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from routes import blood_pressure, doctors, jwt_oauth_doctor, patients, email
+from routes import (
+    analize,
+    blood_pressure,
+    blood_sugar,
+    doctors,
+    jwt_oauth_doctor,
+    patients,
+    email,
+)
 from models.models import create_tables
 
 
@@ -22,7 +30,8 @@ app = FastAPI(lifespan=lifespan)
 app.include_router(doctors.router)
 app.include_router(patients.router)
 app.include_router(blood_pressure.router)
-# app.include_router(analize.router)
+app.include_router(blood_sugar.router)
+app.include_router(analize.router)
 app.include_router(email.router)
 app.include_router(jwt_oauth_doctor.router)
 
