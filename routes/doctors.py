@@ -9,7 +9,11 @@ from sqlalchemy.orm import Session
 from dependencies.dependencies import get_db
 from models.models import Doctor, Email
 from schemas.schemas import DoctorIn, DoctorOut, DoctorUp, EmailSchema
-from routes.jwt_oauth_doctor import get_password_hash, get_current_user, verify_password
+from routes.jwt_oauth_doctor import (
+    get_password_hash,
+    get_current_user,
+    verify_password,
+)
 from sendemail.sendemail import send_email
 
 router = APIRouter(prefix="/doctor", tags=["Doctors"])
@@ -44,7 +48,9 @@ def register_doctor(
     del doctor_bd["email_address"]
     db.add(Doctor(**doctor_bd))
     db.commit()
-    return JSONResponse({"message": "Doctor registration successful", "id": doctor.id})
+    return JSONResponse(
+        {"message": "Doctor registration successful", "id": doctor.id}
+    )
 
 
 @router.get("/me", response_model=DoctorOut)
@@ -92,11 +98,9 @@ def update_doctor(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"error": "Doctor not found", "id": doctor.id},
         )
-    if doctor.id == "null" or doctor.first_name == "null":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"error": "You must provide a valid data for first_name and id"},
-        )
+    if doctor.id == None or doctor.first_name == None:
+        doctor.id = result.id
+        doctor.first_name = result.first_name
 
     doctor_data = doctor.model_dump(exclude_unset=True)
     updated_data = {key: value for key, value in doctor_data.items()}
@@ -126,11 +130,17 @@ def update_doctor(
             )
             db.execute(stmt)
         del updated_data["email_address"]
-    if doctor.password and not verify_password(doctor.password, result.password):
+    if doctor.password and not verify_password(
+        doctor.password, result.password
+    ):
         updated_data.update(password=get_password_hash(doctor.password))
     else:
         updated_data.update(password=result.password)
-    stmt = update(Doctor).where(Doctor.id == current_doctor.id).values(**updated_data)
+    stmt = (
+        update(Doctor)
+        .where(Doctor.id == current_doctor.id)
+        .values(**updated_data)
+    )
     db.execute(stmt)
     db.commit()
     return JSONResponse({"message": "Doctor data was updated successfully."})

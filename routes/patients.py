@@ -53,7 +53,8 @@ def add_patient(
     patient_db = db.scalars(stmt).first()
     if patient_db:
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="This patient already exists."
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This patient already exists.",
         )
 
     stmt = select(Patient).where(Patient.id == patient.id)
@@ -61,7 +62,7 @@ def add_patient(
     if patient_db:
         return JSONResponse(
             {
-                "message": "There is already a patient with id 4 belonging to another doctor. Please check if this is the correct data and add it to your patient record.",
+                "message": f"There is already a patient with id {patient.id} belonging to another doctor. Please check if this is the correct data and add it to your patient record.",
                 "patient": f"{PatientSchema(**patient_db.__dict__)}",
             },
             status_code=status.HTTP_226_IM_USED,
@@ -120,7 +121,8 @@ def add_patient(
     patient_db = db.scalars(stmt).first()
     if not patient_db:
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="This patient does not exist."
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This patient does not exist.",
         )
 
     stmt = doctor_patient.insert().values(
@@ -137,17 +139,33 @@ def add_patient(
 def get_patient(
     current_doctor: Annotated[Doctor, Depends(get_current_user)],
     patient_id: str | None = None,
-    filter: SortBy | None = None,
+    filter_by: SortBy | None = None,
     limit: int | None = None,
     offset: int | None = None,
     order: Order | None = None,
     db: Session = Depends(get_db),
 ):
+    """**Gets a patient** with their id or a **list of them** using a set of filters and sort order
+
+    *Args:*
+
+        patient_id (str | None, optional): Patient id. Defaults to None.
+
+        filter_by (SortBy | None, optional): Sorting criteria: first_name, second_name, last_name, birth_date, height, weight, scholing, employee or married. Defaults to None.
+
+        limit (int | None, optional): Output size. Defaults to all.
+
+        offset (int | None, optional): Top of list. Defaults to 0.
+
+        order (Order | None, optional): asc or desc. Defaults to desc.
+    """
     if patient_id:
         stmt = (
             select(Patient)
             .join(Patient.doctors)
-            .where(and_(Patient.id == patient_id, Doctor.id == current_doctor.id))
+            .where(
+                and_(Patient.id == patient_id, Doctor.id == current_doctor.id)
+            )
         )
         patient_db = db.scalars(stmt).first()
         if not patient_db:
@@ -163,7 +181,7 @@ def get_patient(
                 patient_db["address"] = address.address
         return [PatientSchema(**patient_db)]
 
-    match filter:
+    match filter_by:
         case SortBy.first_name:
             filter = Patient.first_name
         case SortBy.second_name:
@@ -212,7 +230,9 @@ def get_patient(
     for patient_db in patients_db:
         patient_db = patient_db.__dict__
         if patient_db.get("address_id"):
-            stmt = select(Address).where(Address.id == patient_db.get("address_id"))
+            stmt = select(Address).where(
+                Address.id == patient_db.get("address_id")
+            )
             address = db.scalars(stmt).first()
             if address:
                 patient_db["address"] = address.address
@@ -227,6 +247,16 @@ def update_patient(
     patient: PatientUp,
     db: Session = Depends(get_db),
 ):
+    """**Modify patient information**. Unconfigured values will not be changed.
+
+    If you put the string 'null' as the value of any parameter, the corresponding field
+    in the database will be set to Null. It is useful to eliminate incorrect data from
+    the database. A value of 'null' will not be accepted for first_name or id.
+
+    Args:
+
+        patient_id (str): Patient id.
+    """
     stmt = (
         select(Patient)
         .join(Patient.doctors)
@@ -238,26 +268,32 @@ def update_patient(
             status_code=status.HTTP_409_CONFLICT,
             detail="This patient is not registered",
         )
+
+    if patient.id == None or patient.first_name == None:
+        patient.id = patient_db.id
+        patient.first_name = patient_db.first_name
+
     patient_dict = patient.model_dump(exclude_unset=True)
     if patient_dict.get("address"):
         address_db = db.scalars(
-            select(Address).where(Address.id == patient_db.address_id)
+            select(Address).where(Address.address == patient_dict["address"])
         ).first()
-
         if not address_db:
             address = Address(address=patient_dict["address"])
             db.add(address)
             db.flush()
             patient_dict["address_id"] = address.id
         else:
-            stmt = (
-                update(Address)
-                .where(Address.id == patient_db.address_id)
-                .values(address=patient_dict["address"])
-            )
-            db.execute(stmt)
+            patient_dict["address_id"] = address_db.id
+    else:
+        stmt = select(Address).where(Address.id == patient_db.address_id)
+        address = db.scalars(stmt).first()
+        patient_dict["address"] = address.id
     del patient_dict["address"]
-    stmt = update(Patient).where(Patient.id == patient_id).values(**patient_dict)
+
+    stmt = (
+        update(Patient).where(Patient.id == patient_id).values(**patient_dict)
+    )
     if patient_dict.get("id"):
         db.execute(
             doctor_patient.update()
@@ -274,7 +310,7 @@ def update_patient(
 @router.delete("/delete")
 def delete_patient(
     current_doctor: Annotated[Doctor, Depends(get_current_user)],
-    patient_id: int,
+    patient_id: str,
     db: Session = Depends(get_db),
 ):
     stmt = (
@@ -285,10 +321,13 @@ def delete_patient(
     patient_db = db.scalars(stmt).first()
     if not patient_db:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="This patient does not exist."
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="This patient does not exist.",
         )
 
-    stmt = doctor_patient.select().where(doctor_patient.c.patient_id == patient_id)
+    stmt = doctor_patient.select().where(
+        doctor_patient.c.patient_id == patient_id
+    )
     result = len(db.scalars(stmt).all())
     if result == 1:
         stmt = delete(Patient).where(Patient.id == patient_id)
@@ -302,4 +341,6 @@ def delete_patient(
     )
     db.execute(stmt)
     db.commit()
-    return JSONResponse(f"The user patient {patient_id} has been successfully deleted.")
+    return JSONResponse(
+        f"The user patient {patient_id} has been successfully deleted."
+    )
