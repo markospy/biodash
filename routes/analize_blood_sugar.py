@@ -19,7 +19,7 @@ def mean(
     patient_id: str,
     db: Session = Depends(get_db),
 ):
-    """Get the average value of blood sugar"""
+    """**Get the average value of blood sugar**"""
     stmt = select(func.avg(BloodSugarLevel.value)).where(
         BloodSugarLevel.patient_id == patient_id
     )
@@ -38,7 +38,7 @@ def minimum(
     patient_id: str,
     db: Session = Depends(get_db),
 ):
-    """Get the minimum value of blood sugar"""
+    """**Get the minimum value of blood sugar**"""
     stmt = select(func.min(BloodSugarLevel.value)).where(
         BloodSugarLevel.patient_id == patient_id
     )
@@ -57,7 +57,7 @@ def maximum(
     patient_id: str,
     db: Session = Depends(get_db),
 ):
-    """Get the maximum value of blood sugar"""
+    """**Get the maximum value of blood sugar**"""
     stmt = select(func.max(BloodSugarLevel.value)).where(
         BloodSugarLevel.patient_id == patient_id
     )

@@ -59,7 +59,7 @@ def mean(
     heart_rate: bool = True,
     db: Session = Depends(get_db),
 ):
-    """Get the average value of blood pressure and heart rate"""
+    """**Get the average value of blood pressure and heart rate**"""
     list_results = configuration(
         list_params, systolic, diastolic, heart_rate, patient_id, db, func.avg
     )
@@ -83,7 +83,7 @@ def minimum(
     heart_rate: bool = True,
     db: Session = Depends(get_db),
 ):
-    """Get the minimum value of blood pressure and heart rate"""
+    """**Get the minimum value of blood pressure and heart rate**"""
     list_results = configuration(
         list_params, systolic, diastolic, heart_rate, patient_id, db, func.min
     )
@@ -107,7 +107,7 @@ def maximum(
     heart_rate: bool = True,
     db: Session = Depends(get_db),
 ):
-    """Get the maximum value of blood pressure and heart rate"""
+    """**Get the maximum value of blood pressure and heart rate**"""
     list_results = configuration(
         list_params, systolic, diastolic, heart_rate, patient_id, db, func.max
     )
