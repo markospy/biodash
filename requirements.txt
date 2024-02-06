@@ -2,4 +2,5 @@ fastapi[all]==0.105.0
 SQLAlchemy==2.0.23
 python-jose==3.3.0
 bcrypt==4.1.2
+passlib==1.7.4
 PyMySQL==1.1.0
