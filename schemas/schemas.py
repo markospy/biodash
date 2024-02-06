@@ -106,3 +106,7 @@ class AnalizeCardiovascular(BaseModel):
     systolic: float | None = None
     diastolic: float | None = None
     heart_rate: float | None = None
+
+
+class AnalizeBloodSugar(BaseModel):
+    value: float
