@@ -3,7 +3,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from routes import (
-    analize,
+    analize_blood_pressure,
+    analize_blood_sugar,
     blood_pressure,
     blood_sugar,
     doctors,
@@ -31,7 +32,8 @@ app.include_router(doctors.router)
 app.include_router(patients.router)
 app.include_router(blood_pressure.router)
 app.include_router(blood_sugar.router)
-app.include_router(analize.router)
+app.include_router(analize_blood_pressure.router)
+app.include_router(analize_blood_sugar.router)
 app.include_router(email.router)
 app.include_router(jwt_oauth_doctor.router)
 
