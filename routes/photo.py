@@ -3,8 +3,10 @@ from os import getcwd, remove
 from PIL import Image
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, UploadFile
-from fastapi.responses import JSONResponse
-from sqlalchemy import update
+from fastapi import status
+from fastapi.responses import JSONResponse, RedirectResponse
+
+from sqlalchemy import update, select
 from sqlalchemy.orm import Session
 
 from models.models import Doctor
@@ -21,7 +23,8 @@ def create_avatar(filename: str, doctor_id: str):
     size_define = 300, 300
     image = Image.open(PATH_PHOTOS + filename, mode="r")
     image.thumbnail(size_define)
-    image.save(PATH_PHOTOS + doctor_id + "." + filename.split(".")[-1])
+    image = image.convert("RGB")
+    image.save(PATH_PHOTOS + doctor_id + ".png")
     remove(PATH_PHOTOS + filename)
     print("success")
 
@@ -48,13 +51,23 @@ async def upload_photo(
             DoctorPhoto(
                 id=current_doctor.id,
                 first_name=current_doctor.first_name,
-                portrait="/photos/"
-                + current_doctor.id
-                + "."
-                + file.filename.split(".")[-1],
+                portrait="/avatar/" + current_doctor.id + ".png",
             ).model_dump(exclude_unset=True)
         )
     )
     db.execute(stmt)
     db.commit()
     return JSONResponse(content={"message": "success"})
+
+
+@router.get("/avatar")
+def upload_photo(
+    current_doctor: Annotated[Doctor, Depends(get_current_user)],
+    db: Session = Depends(get_db),
+):
+    stmt = select(Doctor).where(Doctor.id == current_doctor.id)
+    portait_url = db.scalars(stmt).first().portrait
+    return RedirectResponse(
+        url=f"http://127.0.0.1:8000{portait_url}",
+        status_code=status.HTTP_302_FOUND,
+    )
