@@ -1,4 +1,5 @@
 from typing import Annotated
+from os import rename
 
 from fastapi import APIRouter, Depends, status
 from fastapi.exceptions import HTTPException
@@ -8,7 +9,13 @@ from sqlalchemy.orm import Session
 
 from dependencies.dependencies import get_db
 from models.models import Doctor, Email
-from schemas.schemas import DoctorIn, DoctorOut, DoctorUp, EmailSchema
+from schemas.schemas import (
+    DoctorIn,
+    DoctorOut,
+    DoctorPhoto,
+    DoctorUp,
+    EmailSchema,
+)
 from routes.jwt_oauth_doctor import (
     get_password_hash,
     get_current_user,
@@ -98,6 +105,11 @@ def update_doctor(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"error": "Doctor not found", "id": doctor.id},
         )
+    if doctor.id:
+        rename(
+            f"/home/marcos/proyectos/backend/biodash/photos/{result.id}.png",
+            f"/home/marcos/proyectos/backend/biodash/photos/{doctor.id}.png",
+        )
     if doctor.id == None or doctor.first_name == None:
         doctor.id = result.id
         doctor.first_name = result.first_name
@@ -147,7 +159,18 @@ def update_doctor(
         .values(**updated_data)
     )
     db.execute(stmt)
-    db.commit()
+    stmt = (
+        update(Doctor)
+        .where(Doctor.id == current_doctor.id)
+        .values(
+            DoctorPhoto(
+                id=current_doctor.id,
+                first_name=current_doctor.first_name,
+                portrait="/avatar/" + current_doctor.id + ".png",
+            ).model_dump(exclude_unset=True)
+        )
+    )
+    db.execute(stmt)
     return JSONResponse({"message": "Doctor data was updated successfully."})
 
 
