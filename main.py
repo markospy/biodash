@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
 from routes import (
     analize_blood_pressure,
@@ -11,6 +12,7 @@ from routes import (
     jwt_oauth_doctor,
     patients,
     email,
+    photo,
 )
 from models.models import create_tables
 
@@ -31,6 +33,7 @@ app = FastAPI(
     description="This Rest API facilitates the control of patients' vital parameters (blood pressure, heart rate and blood glucose). It allows a doctor to create an account and register their patients to keep track of the mentioned parameters.",
 )
 
+app.mount("/photos", StaticFiles(directory="photos"), name="photos")
 
 app.include_router(doctors.router)
 app.include_router(patients.router)
@@ -39,6 +42,7 @@ app.include_router(blood_sugar.router)
 app.include_router(analize_blood_pressure.router)
 app.include_router(analize_blood_sugar.router)
 app.include_router(email.router)
+app.include_router(photo.router)
 app.include_router(jwt_oauth_doctor.router)
 
 
