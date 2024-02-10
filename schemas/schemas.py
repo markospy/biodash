@@ -23,7 +23,6 @@ class Doctor(BaseModel):
     second_name: str | None = None
     last_name: str | None = None
     specialty: str | None = None
-    portrait: str | None = None
     email_address: str | None = None
 
 
