@@ -114,7 +114,9 @@ def update_doctor(
         else:
             id = result.id
         stmt = select(Email).where(Email.doctor_id == current_doctor.id)
-        email_bd = db.scalar(stmt).email_address
+        email_bd = db.scalars(stmt).first()
+        if email_bd:
+            email_bd = email_bd.email_address
         if email_bd != updated_data["email_address"]:
             code = send_email(name, updated_data["email_address"])
             email = EmailSchema(
@@ -123,12 +125,15 @@ def update_doctor(
                 email_verify=False,
                 code=code,
             ).model_dump()
-            stmt = (
-                update(Email)
-                .where(Email.doctor_id == current_doctor.id)
-                .values(**email)
-            )
-            db.execute(stmt)
+            if email_bd:
+                stmt = (
+                    update(Email)
+                    .where(Email.doctor_id == current_doctor.id)
+                    .values(**email)
+                )
+                db.execute(stmt)
+            else:
+                stmt = db.add(Email(**email))
         del updated_data["email_address"]
     if doctor.password and not verify_password(
         doctor.password, result.password
