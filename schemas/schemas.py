@@ -46,6 +46,10 @@ class DoctorUp(DoctorIn):
         return value
 
 
+class DoctorPhoto(Doctor):
+    portrait: str | None = None
+
+
 class PatientSchema(BaseModel):
     id: str
     first_name: str
