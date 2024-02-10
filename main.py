@@ -28,12 +28,13 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
+    title="BioDash",
     lifespan=lifespan,
     summary="Main features:  1.Jwt-oauth registration and login system  2.Account verification by email.  3.Complex relational database queries",
     description="This Rest API facilitates the control of patients' vital parameters (blood pressure, heart rate and blood glucose). It allows a doctor to create an account and register their patients to keep track of the mentioned parameters.",
 )
 
-app.mount("/photos", StaticFiles(directory="photos"), name="photos")
+app.mount("/avatar", StaticFiles(directory="photos"), name="photos")
 
 app.include_router(doctors.router)
 app.include_router(patients.router)
