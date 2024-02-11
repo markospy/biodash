@@ -121,14 +121,6 @@ def update_doctor(
                 ).model_dump(exclude_unset=True)
             )
         )
-        print("Query 2")
-        print(
-            DoctorPhoto(
-                id=current_doctor.id,
-                first_name=current_doctor.first_name,
-                portrait=f"/avatar/{current_doctor.id}.png",
-            ).model_dump(exclude_unset=True)
-        )
         db.execute(stmt)
     if doctor.id == None or doctor.first_name == None:
         doctor.id = result.id
@@ -165,7 +157,7 @@ def update_doctor(
                 )
                 db.execute(stmt)
             else:
-                stmt = db.add(Email(**email))
+                db.add(Email(**email))
         del updated_data["email_address"]
     if doctor.password and not verify_password(
         doctor.password, result.password
@@ -178,8 +170,6 @@ def update_doctor(
         .where(Doctor.id == current_doctor.id)
         .values(**updated_data)
     )
-    print("Query 3")
-    print(updated_data)
     db.execute(stmt)
     db.commit()
     return JSONResponse({"message": "Doctor data was updated successfully."})
