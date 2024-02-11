@@ -2,6 +2,12 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse
+from jinja2 import Environment, FileSystemLoader
+
+# Carga la plantilla
+env = Environment(loader=FileSystemLoader("templates"))
+template = env.get_template("template.html")
 
 from routes import (
     analize_blood_pressure,
@@ -47,8 +53,6 @@ app.include_router(photo.router)
 app.include_router(jwt_oauth_doctor.router)
 
 
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 async def root():
-    return {
-        "message": "This aplication can be used to keep track of blood pressure values"
-    }
+    return template.render()
