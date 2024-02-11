@@ -5,3 +5,4 @@ bcrypt==4.1.2
 passlib==1.7.4
 PyMySQL==1.1.0
 pillow==10.2.0
+jinja2==3.1.3
