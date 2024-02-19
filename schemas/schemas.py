@@ -92,7 +92,6 @@ class CardiovascularParameter(CardiovascularParameterOut):
     systolic: int = 120
     diastolic: int = 80
     patient_id: str
-    doctor_id: str
 
 
 class BloodSugarLevelOut(BaseModel):
@@ -102,7 +101,6 @@ class BloodSugarLevelOut(BaseModel):
 
 class BloodSugarLevelIn(BloodSugarLevelOut):
     patient_id: str
-    doctor_id: str
 
 
 class AnalizeCardiovascular(BaseModel):
