@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 # Create
 def add_measurement(
     measurement,
+    doctor_id,
     model_db,
     db: Session,
 ):
@@ -24,7 +25,9 @@ def add_measurement(
         raise HTTPException(
             status_code=409, detail="Measurement already exists."
         )
-    db.add(model_db(**measurement.model_dump()))
+    measurement_dict = measurement.model_dump()
+    measurement_dict["doctor_id"] = doctor_id
+    db.add(model_db(**measurement_dict))
     db.commit()
     return JSONResponse("The measurement was saved correctly")
 
@@ -90,6 +93,11 @@ def delete_all_measurements(
         stmt = delete(model_db).where(
             and_(model_db.patient_id == patient_id, model_db.date == date)
         )
+        db.execute(stmt)
+        db.commit()
+        return JSONResponse(
+            f"Patient measurement with id {patient_id} have been successfully deleted."
+        )
     else:
         stmt = select(model_db).where(model_db.patient_id == patient_id)
         result = db.scalars(stmt).all()
@@ -98,8 +106,8 @@ def delete_all_measurements(
                 status_code=404, detail="There is no such measurement"
             )
         stmt = delete(model_db).where(model_db.patient_id == patient_id)
-    db.execute(stmt)
-    db.commit()
-    return JSONResponse(
-        f"Patient measurements with id {patient_id} have been successfully deleted."
-    )
+        db.execute(stmt)
+        db.commit()
+        return JSONResponse(
+            f"All patient measurements with id {patient_id} have been successfully deleted."
+        )
