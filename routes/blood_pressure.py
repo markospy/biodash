@@ -2,7 +2,6 @@ from typing import Annotated
 from datetime import datetime
 
 from fastapi import APIRouter, Depends
-from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from models.models import Doctor
@@ -46,8 +45,7 @@ def add(
     db: Session = Depends(get_db),
 ):
     """**Adds a new measurement of the main cardiovascular parameters**"""
-    add_measurement(measurement, model_db=cvpm, db=db)
-    return JSONResponse({"message": "Measurement add successful"})
+    return add_measurement(measurement, model_db=cvpm, db=db)
 
 
 @router.get(
@@ -81,7 +79,7 @@ def update(
     db: Session = Depends(get_db),
 ):
     """**Update a measurement**"""
-    update_measurement(
+    return update_measurement(
         manage_null_values,
         patient_id,
         date,
@@ -99,6 +97,6 @@ def delete(
     db: Session = Depends(get_db),
 ):
     """**Deletes a measurement** for a patient on the specified date and time"""
-    delete_all_measurements(
+    return delete_all_measurements(
         model_db=cvpm, db=db, patient_id=patient_id, date=date
     )
