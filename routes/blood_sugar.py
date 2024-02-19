@@ -36,7 +36,7 @@ def add(
     db: Session = Depends(get_db),
 ):
     """**Adds a new measurement of the blood sugar level**"""
-    return add_measurement(measurement, model_db=bsl, db=db)
+    return add_measurement(measurement, current_doctor.id, model_db=bsl, db=db)
 
 
 @router.get(

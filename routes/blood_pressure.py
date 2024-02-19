@@ -45,7 +45,7 @@ def add(
     db: Session = Depends(get_db),
 ):
     """**Adds a new measurement of the main cardiovascular parameters**"""
-    return add_measurement(measurement, model_db=cvpm, db=db)
+    return add_measurement(measurement, current_doctor.id, model_db=cvpm, db=db)
 
 
 @router.get(
