@@ -11,6 +11,5 @@ Since the operation of an API is something that normally only developers underst
 4. Complex database queries.
 5. Handling static files.
 
-## Improvement points.
-1. Some spaghetti code that needs to be refactored. This is not Italy.
-2. Difficulty in achieving cascade deletion.
+## Database entity relationship model
+![Database entity relationship model](desing_db/base_dato_biodash.jpg)
