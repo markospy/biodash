@@ -2,6 +2,7 @@ from typing import Annotated
 from datetime import datetime
 
 from fastapi import APIRouter, Depends
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from models.models import Doctor
@@ -37,6 +38,7 @@ def add(
 ):
     """**Adds a new measurement of the blood sugar level**"""
     add_measurement(measurement, model_db=bsl, db=db)
+    return JSONResponse({"message": "Measurement add successful"})
 
 
 @router.get(
