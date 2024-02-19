@@ -36,6 +36,7 @@ async def upload_photo(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
 ):
+    """**Upload a photo for the doctor's profile**"""
     with open(PATH_PHOTOS + file.filename, "wb") as photo:
         content = await file.read()
         photo.write(content)
@@ -61,10 +62,11 @@ async def upload_photo(
 
 
 @router.get("/avatar")
-def upload_photo(
+def get_photo(
     current_doctor: Annotated[Doctor, Depends(get_current_user)],
     db: Session = Depends(get_db),
 ):
+    """**Get the doctor's profile photo**"""
     stmt = select(Doctor).where(Doctor.id == current_doctor.id)
     portait_url = db.scalars(stmt).first().portrait
     return RedirectResponse(
