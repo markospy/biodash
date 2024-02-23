@@ -151,7 +151,7 @@ def get_patient(
 
         patient_id (str | None, optional): Patient id. Defaults to None.
 
-        filter_by (SortBy | None, optional): Sorting criteria: first_name, second_name, last_name, birth_date, height, weight, scholing, employee or married. Defaults to None.
+        filter_by (SortBy | None, optional): Sorting criteria: first_name, second_name, last_name, birth_date, height, weight, scholing, employee or married. Defaults to first_name.
 
         limit (int | None, optional): Output size. Defaults to all.
 
@@ -200,6 +200,8 @@ def get_patient(
             filter = Patient.employee
         case SortBy.married:
             filter = Patient.married
+        case _:
+            filter = Patient.first_name
 
     if order == Order.asc:
         stmt = (
