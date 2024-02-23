@@ -5,7 +5,6 @@ from sqlalchemy import (
     Enum,
     create_engine,
     ForeignKey,
-    func,
     Table,
     Column,
     UniqueConstraint,
@@ -118,8 +117,8 @@ class Patient(Base):
         back_populates="patients",
     )
     address_id: Mapped[int | None] = mapped_column(ForeignKey("address.id"))
-    address: Mapped[Address] = relationship(
-        back_populates="patient", cascade="all, delete"
+    address = relationship(
+        "Address", back_populates="patient", cascade="all, delete"
     )
     measure_cvs: Mapped[list["CardiovascularParameter"]] = relationship(
         back_populates="patient", cascade="all, delete"
@@ -162,14 +161,14 @@ class BloodSugarLevel(Base):
 
 
 # Motor sqlite
-#engine = create_engine("sqlite:///db/base.db", echo=True)
+# engine = create_engine("sqlite:///db/base.db", echo=True)
 
 # Motor mysql
 # engine = create_engine("mysql+pymysql://marcos:mypassword@localhost/bio_parameters_control?charset=utf8mb4")
 
 # Motor mysql en la nube
 engine = create_engine(
-    "mysql+pymysql://uyulqcd5xaby3izs:RfcyTwIj4WX4sJwXE5Ia@bpysx150f8pdze51ychl-mysql.services.clever-cloud.com:3306/bpysx150f8pdze51ychl"
+    "postgresql://usv7szebhzti4ffmzvgv:661cf3KB6wZWCfpOEXnrYPdcSBqWRg@bfz113ara9rjnkwgr6bc-postgresql.services.clever-cloud.com:50013/bfz113ara9rjnkwgr6bc"
 )
 
 session_local = sessionmaker(autocommit=False, autoflush=False, bind=engine)
