@@ -163,12 +163,12 @@ class BloodSugarLevel(Base):
 # Motor sqlite
 # engine = create_engine("sqlite:///db/base.db", echo=True)
 
-# Motor mysql
+# Motor mysql local
 # engine = create_engine("mysql+pymysql://marcos:mypassword@localhost/bio_parameters_control?charset=utf8mb4")
 
 # Motor mysql en la nube
 engine = create_engine(
-    "postgresql://usv7szebhzti4ffmzvgv:661cf3KB6wZWCfpOEXnrYPdcSBqWRg@bfz113ara9rjnkwgr6bc-postgresql.services.clever-cloud.com:50013/bfz113ara9rjnkwgr6bc"
+    "mysql://uvzllnvtovfrjewo:qZgO0IJfRtORApnSJJpX@bxofqb4tg7iwshybpmrs-mysql.services.clever-cloud.com:3306/bxofqb4tg7iwshybpmrs"
 )
 
 session_local = sessionmaker(autocommit=False, autoflush=False, bind=engine)
