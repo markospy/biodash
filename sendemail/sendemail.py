@@ -26,7 +26,7 @@ EMAIL_HTML_TEMPLATE = """
     <br>
     {}
     <br>
-    <h2>
+    <h2 style='color: #F12D22; font-family:monospace'>
     {}
     </h2>
     Bye!
@@ -87,4 +87,5 @@ def send_email(name: str, email: str) -> int:
     code = randint(10_000, 99_999)
     email_msg = EmailSenderClass()
     email_msg.sendHtmlEmailTo(name, email, "Verification code:", code)
+    print(code)
     return code
