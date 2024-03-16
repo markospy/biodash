@@ -1,5 +1,14 @@
+import os
 import enum
+from dotenv import load_dotenv
 from datetime import datetime as dt
+
+load_dotenv()
+usuario = os.getenv("USER")
+contraseña = os.getenv("PASSWORD")
+localhost = os.getenv("LOCALHOST")
+puerto = os.getenv("PORT")
+base_de_datos = os.getenv("BD")
 
 from sqlalchemy import (
     Enum,
@@ -168,7 +177,7 @@ class BloodSugarLevel(Base):
 
 # Motor mysql en la nube
 engine = create_engine(
-    "mysql://uvzllnvtovfrjewo:qZgO0IJfRtORApnSJJpX@bxofqb4tg7iwshybpmrs-mysql.services.clever-cloud.com:3306/bxofqb4tg7iwshybpmrs"
+    f"mysql+mysqldb://{usuario}:{contraseña}@{localhost}:{puerto}/{base_de_datos}"
 )
 
 session_local = sessionmaker(autocommit=False, autoflush=False, bind=engine)
