@@ -1,48 +1,11 @@
-import os
-import enum
-from dotenv import load_dotenv
 from datetime import datetime as dt
 
-load_dotenv()
-usuario = os.getenv("USER")
-contraseña = os.getenv("PASSWORD")
-localhost = os.getenv("LOCALHOST")
-puerto = os.getenv("PORT")
-base_de_datos = os.getenv("BD")
-
-from sqlalchemy import (
-    Enum,
-    create_engine,
-    ForeignKey,
-    Table,
-    Column,
-    UniqueConstraint,
-)
+from sqlalchemy import Enum, ForeignKey, Table, Column, UniqueConstraint
 from sqlalchemy.types import String, DateTime, JSON
-from sqlalchemy.orm import (
-    DeclarativeBase,
-    Mapped,
-    mapped_column,
-    sessionmaker,
-    relationship,
-)
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-
-class Base(DeclarativeBase):
-    pass
-
-
-class Gender(enum.Enum):
-    male = 1
-    female = 2
-
-
-class Scholing(enum.Enum):
-    primary = 1
-    secondary = 2
-    pre_university = 3
-    university = 4
-    middle_technical = 5
+from database.database import Base
+from models.enumerations import Gender, Scholing
 
 
 class Email(Base):
@@ -69,12 +32,8 @@ class Address(Base):
 doctor_patient = Table(
     "doctor_patient",
     Base.metadata,
-    Column(
-        "doctor_id", String(30), ForeignKey("doctors.id", ondelete="CASCADE")
-    ),
-    Column(
-        "patient_id", String(30), ForeignKey("patients.id", ondelete="CASCADE")
-    ),
+    Column("doctor_id", String(30), ForeignKey("doctors.id", ondelete="CASCADE")),
+    Column("patient_id", String(30), ForeignKey("patients.id", ondelete="CASCADE")),
     UniqueConstraint("doctor_id", "patient_id", name="uix_1"),
 )
 
@@ -94,16 +53,10 @@ class Doctor(Base):
         cascade="all, delete",
         back_populates="doctors",
     )
-    email = relationship(
-        "Email", back_populates="doctor", cascade="all, delete"
-    )
+    email = relationship("Email", back_populates="doctor", cascade="all, delete")
 
-    measure_cvs: Mapped[list["CardiovascularParameter"]] = relationship(
-        back_populates="doctor", cascade="all, delete"
-    )
-    measure_blood_sugar: Mapped[list["BloodSugarLevel"]] = relationship(
-        back_populates="doctor", cascade="all, delete"
-    )
+    measure_cvs: Mapped[list["CardiovascularParameter"]] = relationship(back_populates="doctor", cascade="all, delete")
+    measure_blood_sugar: Mapped[list["BloodSugarLevel"]] = relationship(back_populates="doctor", cascade="all, delete")
 
 
 class Patient(Base):
@@ -167,21 +120,3 @@ class BloodSugarLevel(Base):
     )
     patient = relationship("Patient", back_populates="measure_blood_sugar")
     doctor = relationship("Doctor", back_populates="measure_blood_sugar")
-
-
-# Motor sqlite
-# engine = create_engine("sqlite:///db/base.db", echo=True)
-
-# Motor mysql local
-# engine = create_engine("mysql+pymysql://marcos:mypassword@localhost/bio_parameters_control?charset=utf8mb4")
-
-# Motor mysql en la nube
-engine = create_engine(
-    f"mysql+mysqldb://{usuario}:{contraseña}@{localhost}:{puerto}/{base_de_datos}"
-)
-
-session_local = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-
-def create_tables():
-    Base.metadata.create_all(engine)

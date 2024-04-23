@@ -1,6 +1,6 @@
 # This module manages the connection with the database.
 
-from models.models import session_local
+from database.database import session_local
 
 
 # Dependency database

@@ -2,12 +2,6 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse
-from jinja2 import Environment, FileSystemLoader
-
-# Carga la plantilla
-env = Environment(loader=FileSystemLoader("templates"))
-template = env.get_template("template.html")
 
 from routes import (
     analize_blood_pressure,
@@ -19,8 +13,9 @@ from routes import (
     patients,
     email,
     photo,
+    root
 )
-from models.models import create_tables
+from database.database import create_tables
 
 
 @asynccontextmanager
@@ -41,6 +36,7 @@ app = FastAPI(
 
 app.mount("/avatar", StaticFiles(directory="photos"), name="photos")
 
+app.include_router(root.router)
 app.include_router(doctors.router)
 app.include_router(patients.router)
 app.include_router(blood_pressure.router)
@@ -50,8 +46,3 @@ app.include_router(analize_blood_sugar.router)
 app.include_router(email.router)
 app.include_router(photo.router)
 app.include_router(jwt_oauth_doctor.router)
-
-
-@app.get("/", response_class=HTMLResponse)
-async def root():
-    return template.render()

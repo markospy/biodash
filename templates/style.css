@@ -1,0 +1,9 @@
+button {
+    background-color: green;
+    border-radius: 10px;
+    display: flex;
+    margin: 0 auto;
+    padding: 10px 20px;
+    color: white;
+    text-decoration: none;
+  }

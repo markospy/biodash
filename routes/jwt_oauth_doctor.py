@@ -1,8 +1,6 @@
-import os
 from typing import Annotated
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 
-from dotenv import load_dotenv
 from fastapi import Depends, APIRouter, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
@@ -14,6 +12,9 @@ from pydantic import BaseModel
 from dependencies.dependencies import get_db
 from models.models import Doctor
 from schemas.schemas import DoctorIn
+from env_loader import EnvLoader
+
+env_loader = EnvLoader()
 
 router = APIRouter()
 
@@ -26,11 +27,6 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     doctor_id: str | None = None
 
-
-load_dotenv()
-SECRET_KEY = os.getenv("SECRET_KEY")
-ALGORITHM = os.getenv("ALGORITHM")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 pwd_context = CryptContext(schemes=["bcrypt"])
@@ -72,11 +68,11 @@ def authenticate_user(db: Session, identification: str, password: str):
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now(UTC) + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
+        expire = datetime.now(UTC) + timedelta(minutes=15)
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, env_loader.secrete_key, algorithm=env_loader.algorithm)
     return encoded_jwt
 
 
@@ -90,7 +86,7 @@ def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, env_loader.secrete_key, algorithms=env_loader.algorithm)
         doctor: str = payload.get("sub")
         if doctor is None:
             raise credentials_exception
@@ -116,7 +112,7 @@ def login_for_access_token(
             detail="Incorrect doctor's id or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token_expires = timedelta(minutes=env_loader.acces_token_expire_minutes)
     access_token = create_access_token(
         data={"sub": doctor.id}, expires_delta=access_token_expires
     )

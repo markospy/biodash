@@ -1,5 +1,4 @@
 from typing import Annotated
-from enum import Enum
 
 from fastapi import APIRouter, Depends, status
 from fastapi.exceptions import HTTPException
@@ -11,28 +10,10 @@ from models.models import Patient, Doctor, Address, doctor_patient
 from dependencies.dependencies import get_db
 from schemas.schemas import PatientSchema, PatientUp
 from routes.jwt_oauth_doctor import get_current_user
+from models.enumerations import Order, SortBy
 
 
 router = APIRouter(prefix="/patients", tags=["Patients"])
-
-
-class SortBy(Enum):
-    first_name = "first_name"
-    second_name = "second_name"
-    last_name = "last_name"
-    birth_date = "birth_date"
-    gender = "gender"
-    height = "height"
-    weight = "weight"
-    scholing = "scholing"
-    employee = "employee"
-    married = "married"
-
-
-class Order(Enum):
-    asc = "asc"
-    desc = "desc"
-
 
 @router.post("/add")
 def add_patient(
