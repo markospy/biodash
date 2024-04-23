@@ -1,8 +1,7 @@
 from typing import Annotated
-from os import rename
+import os
 
-from fastapi import APIRouter, Depends, status
-from fastapi.exceptions import HTTPException
+from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from sqlalchemy import select, update, delete
 from sqlalchemy.orm import Session
@@ -16,34 +15,109 @@ from schemas.schemas import (
     DoctorUp,
     EmailSchema,
 )
-from routes.jwt_oauth_doctor import (
-    get_password_hash,
-    get_current_user,
-    verify_password,
-)
+from routes.jwt_oauth_doctor import get_password_hash, get_current_user, verify_password
 from sendemail.sendemail import send_email
+from models.exceptions import exception_if_already_exists
 
 router = APIRouter(prefix="/doctor", tags=["Doctors"])
 
 
+def get_doctor_by_id(id: int, db: Session):
+    """Get doctor by ID"""
+    stmt = select(Doctor).where(Doctor.id == id)
+    result = db.scalars(stmt).first()
+    return result
+
+def set_email_information(doctor: dict, email: Email | None):
+    """Set email information for the doctor"""
+    if email:
+        doctor["email_address"] = email.email_address
+        doctor["email_verify"] = email.email_verify
+    else:
+        doctor["email_address"] = None
+        doctor["email_verify"] = False
+
+def update_doctor_photo(doctor: Doctor, new_id: int, db: Session):
+    """Update doctor photo"""
+    if doctor.id:
+        os.rename(
+            f"../photos/{doctor.id}.png",
+            f"../photos/{new_id}.png",
+        )
+        stmt = (
+            update(Doctor)
+            .where(Doctor.id == doctor.id)
+            .values(
+                DoctorPhoto(
+                    id=new_id,
+                    first_name=doctor.first_name,
+                    portrait=f"/avatar/{new_id}.png",
+                ).model_dump(exclude_unset=True)
+            )
+        )
+        db.execute(stmt)
+
+def update_doctor_email(current_doctor: Doctor, data: dict, db: Session,):
+    """Update doctor email"""
+    if data.get("email_address"):
+        if data.get("first_name"):
+            name = data["first_name"]
+        else:
+            name = current_doctor.first_name
+        if data.get("id"):
+            id = data["id"]
+        else:
+            id = current_doctor.id
+        stmt = select(Email).where(Email.doctor_id == current_doctor.id)
+        email_bd = db.scalars(stmt).first()
+        if email_bd:
+            email_bd = email_bd.email_address
+        if email_bd != data["email_address"]:
+            code = send_email(name,data["email_address"])
+            email = EmailSchema(
+                email_address=data["email_address"],
+                doctor_id=id,
+                email_verify=False,
+                code=code,
+            ).model_dump()
+            if email_bd:
+                stmt = (
+                    update(Email)
+                    .where(Email.doctor_id == current_doctor.id)
+                    .values(**email)
+                )
+                db.execute(stmt)
+            else:
+                db.add(Email(**email))
+        del data["email_address"]
+
+def update_password(new_password:str, currente_password:str, data):
+    if new_password and not verify_password(new_password, currente_password):
+        data.update(password=get_password_hash(new_password))
+    else:
+        data.update(password=currente_password)
+
+def update_doctor_id(new_id:int | None, current_id:int):
+    if new_id == None:
+        new_id = current_id
+
+def update_doctor_first_name(new_name:str | None, current_name:str):
+    if new_name == None:
+        new_name = current_name
+
+
 @router.post("/register")
-def register_doctor(
-    doctor: DoctorIn,
-    db: Session = Depends(get_db),
-):
+def register_doctor(doctor: DoctorIn, db: Session = Depends(get_db)):
     """**Register a new doctor**
 
     If you submit an email address, a verification code will be sent to your inbox.
     """
-    stmt = select(Doctor).where(Doctor.id == doctor.id)
-    result = db.scalars(stmt).first()
-    if result:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail={"error": "Doctor already exists", "id": doctor.id},
-        )
+    result = get_doctor_by_id(doctor.id, db)
+    exception_if_already_exists(result, {"error": "Doctor already exists", "id": doctor.id})
+
     doctor_bd = doctor.__dict__
     doctor_bd.update(password=get_password_hash(doctor_bd["password"]))
+
     if doctor_bd["email_address"]:
         code = send_email(doctor_bd["first_name"], doctor_bd["email_address"])
         email = EmailSchema(
@@ -52,34 +126,22 @@ def register_doctor(
             code=code,
         ).model_dump()
         db.add(Email(**email))
+
     del doctor_bd["email_address"]
     db.add(Doctor(**doctor_bd))
     db.commit()
-    return JSONResponse(
-        {"message": "Doctor registration successful", "id": doctor.id}
-    )
+    return JSONResponse({"message": "Doctor registration successful", "id": doctor.id})
 
 
 @router.get("/me", response_model=DoctorOut)
-def get_doctor(
-    current_doctor: Annotated[Doctor, Depends(get_current_user)],
-    db: Session = Depends(get_db),
-):
+def get_doctor(current_doctor: Annotated[Doctor, Depends(get_current_user)], db: Session = Depends(get_db)):
     """**Get information about the currently authenticated doctor**"""
     doctor_data = current_doctor.__dict__
-    doctor = {
-        key: value
-        for key, value in doctor_data.items()
-        if value is not None or key == "password"
-    }
+    doctor = {key: value for key, value in doctor_data.items() if value is not None or key == "password"}
+
     stmt = select(Email).where(Email.doctor_id == current_doctor.id)
     email = db.scalars(stmt).first()
-    if email:
-        doctor["email_address"] = email.email_address
-        doctor["email_verify"] = email.email_verify
-    else:
-        doctor["email_address"] = None
-        doctor["email_verify"] = False
+    set_email_information(doctor, email)
     return DoctorOut(**doctor)
 
 
@@ -98,88 +160,21 @@ def update_doctor(
 
     If you update your email address, a verification code will be sent to your inbox.
     """
-    stmt = select(Doctor).where(Doctor.id == current_doctor.id)
-    result = db.scalars(stmt).first()
-    if not result:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"error": "Doctor not found", "id": doctor.id},
-        )
-    if doctor.id:
-        rename(
-            f"/home/marcos/proyectos/backend/biodash/photos/{result.id}.png",
-            f"/home/marcos/proyectos/backend/biodash/photos/{doctor.id}.png",
-        )
-        stmt = (
-            update(Doctor)
-            .where(Doctor.id == current_doctor.id)
-            .values(
-                DoctorPhoto(
-                    id=doctor.id,
-                    first_name=current_doctor.first_name,
-                    portrait=f"/avatar/{doctor.id}.png",
-                ).model_dump(exclude_unset=True)
-            )
-        )
-        db.execute(stmt)
-    if doctor.id == None or doctor.first_name == None:
-        doctor.id = result.id
-        doctor.first_name = result.first_name
-
+    update_doctor_photo(current_doctor, new_id=doctor.id, db=db)
+    update_doctor_id(doctor.id, current_doctor.id)
+    update_doctor_first_name(doctor.first_name, current_doctor.first_name)
     doctor_data = doctor.model_dump(exclude_unset=True)
     updated_data = {key: value for key, value in doctor_data.items()}
-    if updated_data.get("email_address"):
-        if updated_data.get("first_name"):
-            name = updated_data["first_name"]
-        else:
-            name = result.first_name
-        if updated_data.get("id"):
-            id = updated_data["id"]
-        else:
-            id = result.id
-        stmt = select(Email).where(Email.doctor_id == current_doctor.id)
-        email_bd = db.scalars(stmt).first()
-        if email_bd:
-            email_bd = email_bd.email_address
-        if email_bd != updated_data["email_address"]:
-            code = send_email(name, updated_data["email_address"])
-            email = EmailSchema(
-                email_address=updated_data["email_address"],
-                doctor_id=id,
-                email_verify=False,
-                code=code,
-            ).model_dump()
-            if email_bd:
-                stmt = (
-                    update(Email)
-                    .where(Email.doctor_id == current_doctor.id)
-                    .values(**email)
-                )
-                db.execute(stmt)
-            else:
-                db.add(Email(**email))
-        del updated_data["email_address"]
-    if doctor.password and not verify_password(
-        doctor.password, result.password
-    ):
-        updated_data.update(password=get_password_hash(doctor.password))
-    else:
-        updated_data.update(password=result.password)
-    stmt = (
-        update(Doctor)
-        .where(Doctor.id == current_doctor.id)
-        .values(**updated_data)
-    )
+    update_doctor_email(current_doctor, updated_data, db)
+    update_password(doctor.password, current_doctor.password, updated_data)
+    stmt = (update(Doctor).where(Doctor.id == current_doctor.id).values(**updated_data))
     db.execute(stmt)
     db.commit()
     return JSONResponse({"message": "Doctor data was updated successfully."})
 
 
 @router.delete("/delete")
-def delete_doctor(
-    current_doctor: Annotated[Doctor, Depends(get_current_user)],
-    db: Session = Depends(get_db),
-):
+def delete_doctor(current_doctor: Annotated[Doctor, Depends(get_current_user)], db: Session = Depends(get_db)):
     """**Delete the currently authenticated doctor**"""
     stmt = delete(Doctor).where(Doctor.id == current_doctor.id)
     db.execute(stmt)
@@ -189,10 +184,3 @@ def delete_doctor(
             "message": f"Doctor with ID {current_doctor.id} has been successfully deleted."
         }
     )
-
-
-# ON DELETE CASCADE
-# The desired effect was cascading deletion of patients when deleting a doctor record.
-# However, when I delete a doctor, the patients that are no longer associated with the
-# doctor that have just been deleted remain, since the record in the union table is
-# deleted: doctor_patient
