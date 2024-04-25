@@ -106,7 +106,7 @@ def update_doctor_first_name(new_name:str | None, current_name:str):
         new_name = current_name
 
 
-@router.post("/register")
+@router.post("")
 def register_doctor(doctor: DoctorIn, db: Session = Depends(get_db)):
     """**Register a new doctor**
 
@@ -133,7 +133,7 @@ def register_doctor(doctor: DoctorIn, db: Session = Depends(get_db)):
     return JSONResponse({"message": "Doctor registration successful", "id": doctor.id})
 
 
-@router.get("/me", response_model=DoctorOut)
+@router.get("", response_model=DoctorOut)
 def get_doctor(current_doctor: Annotated[Doctor, Depends(get_current_user)], db: Session = Depends(get_db)):
     """**Get information about the currently authenticated doctor**"""
     doctor_data = current_doctor.__dict__
@@ -145,7 +145,7 @@ def get_doctor(current_doctor: Annotated[Doctor, Depends(get_current_user)], db:
     return DoctorOut(**doctor)
 
 
-@router.put("/update")
+@router.put("")
 def update_doctor(
     current_doctor: Annotated[Doctor, Depends(get_current_user)],
     doctor: DoctorUp,
@@ -173,7 +173,7 @@ def update_doctor(
     return JSONResponse({"message": "Doctor data was updated successfully."})
 
 
-@router.delete("/delete")
+@router.delete("")
 def delete_doctor(current_doctor: Annotated[Doctor, Depends(get_current_user)], db: Session = Depends(get_db)):
     """**Delete the currently authenticated doctor**"""
     stmt = delete(Doctor).where(Doctor.id == current_doctor.id)
