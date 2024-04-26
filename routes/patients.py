@@ -11,112 +11,86 @@ from dependencies.dependencies import get_db
 from schemas.schemas import PatientSchema, PatientUp
 from routes.jwt_oauth_doctor import get_current_user
 from models.enumerations import Order, SortBy
+from models.exceptions import exception_if_already_exists, exception_if_not_exists
 
 
 router = APIRouter(prefix="/patients", tags=["Patients"])
 
-@router.post("/add")
-def add_patient(
-    current_doctor: Annotated[Doctor, Depends(get_current_user)],
-    patient: PatientSchema,
-    db: Session = Depends(get_db),
-):
-    """**Add a new patient**
+def get_patient_by_id_and_doctor_id(patient_id, doctor_id, db: Session):
+    """Get patient by ID"""
 
-    If a patient with the same ID already exists in another doctor's office,
-    you will be asked to add it from the 'add existing patient' endpoint
-    """
-    stmt = (
-        select(Patient)
-        .join(Patient.doctors)
-        .where(and_(Patient.id == patient.id, Doctor.id == current_doctor.id))
-    )
+    stmt = select(Patient).join(Patient.doctors).where(and_(Patient.id == patient_id, Doctor.id == doctor_id))
     patient_db = db.scalars(stmt).first()
-    if patient_db:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="This patient already exists.",
-        )
+    return patient_db
 
-    stmt = select(Patient).where(Patient.id == patient.id)
+def get_patient_by_id(id, db: Session):
+    stmt = select(Patient).where(Patient.id == id)
     patient_db = db.scalars(stmt).first()
-    if patient_db:
+    return patient_db
+
+def check_and_add_address(patient: dict, db: Session):
+    if patient.get("address"):
+        address_db = db.scalars(select(Address).where(Address.address == patient["address"])).first()
+        if not address_db:
+            address = Address(address=patient["address"])
+            db.add(address)
+            db.flush()
+            patient["address_id"] = address.id
+        else:
+            patient["address_id"] = address_db.id
+    del patient["address"]
+    return patient
+
+def add_patient_bd(patient_id, doctor_id, db: Session):
+    smt = doctor_patient.insert().values(patient_id=patient_id, doctor_id=doctor_id)
+    db.execute(smt)
+    db.commit()
+    return JSONResponse({"message": "Patient registration successful", "id": patient_id})
+
+def patient_exist_alert(patient: dict):
+    """Envia un alerta si el diccionario con los datos del paciente no esta vacio."""
+    if patient:
         return JSONResponse(
             {
                 "message": f"There is already a patient with id {patient.id} belonging to another doctor. Please check if this is the correct data and add it to your patient record.",
-                "patient": f"{PatientSchema(**patient_db.__dict__)}",
+                "patient": f"{PatientSchema(**patient.__dict__)}",
             },
             status_code=status.HTTP_226_IM_USED,
         )
 
-    patient_dict = patient.model_dump(exclude_unset=True)
-    if patient_dict.get("address"):
-        address_db = db.scalars(
-            select(Address).where(Address.address == patient_dict["address"])
-        ).first()
-        if not address_db:
-            address = Address(address=patient_dict["address"])
-            db.add(address)
-            db.flush()
-            patient_dict["address_id"] = address.id
-        else:
-            patient_dict["address_id"] = address_db.id
-    else:
-        patient_dict["address_id"] = None
-    del patient_dict["address"]
-    db.add(Patient(**patient_dict))
-    db.execute(
-        doctor_patient.insert().values(
-            patient_id=patient_dict["id"], doctor_id=current_doctor.id
-        )
-    )
-    db.commit()
-    return JSONResponse(
-        {"message": "Patient registration successful", "id": patient_dict["id"]}
-    )
-
-
-@router.post("/add_existing_patient")
+@router.post("")
 def add_patient(
     current_doctor: Annotated[Doctor, Depends(get_current_user)],
-    patient_id: str,
+    patient: PatientSchema,
+    isExist: bool = False,
+    patient_id: str | None = None,
     db: Session = Depends(get_db),
 ):
-    """Adds a patient who already belonged to another doctor's office to the currently verified doctor's office.
-    Now the patient will belong to several doctors, depending on the number of doctors who have added them to their
-    consultation.
     """
-    stmt = (
-        select(Patient)
-        .join(Patient.doctors)
-        .where(and_(Patient.id == patient_id, Doctor.id == current_doctor.id))
-    )
-    patient_db = db.scalars(stmt).first()
-    if patient_db:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="This patient is already registered.",
-        )
+    **Add a new patient**
 
-    stmt = select(Patient).where(Patient.id == patient_id)
-    patient_db = db.scalars(stmt).first()
-    if not patient_db:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="This patient does not exist.",
-        )
+    If you want a patient linked to the office of another doctor, only,
+    you must add the parameters _isExist = true_ and the _patient ID_, leaving
+    in None the parameter _patient_
 
-    stmt = doctor_patient.insert().values(
-        patient_id=patient_id, doctor_id=current_doctor.id
-    )
-    db.execute(stmt)
-    db.commit()
-    return JSONResponse(
-        {"message": "Patient registration successful", "id": patient_id}
-    )
+    """
+    result = get_patient_by_id_and_doctor_id(patient.id, current_doctor.id, db)
+    exception_if_already_exists(result, "This patient already exists.")
+
+    if isExist:
+        patient_db = get_patient_by_id(patient_id, db)
+        exception_if_not_exists(patient_db, "This patient does not exist.")
+        add_patient_bd(patient_id, current_doctor.id, db)
+    else:
+        patient_db = get_patient_by_id(patient.id, db)
+        patient_exist_alert(patient_db)
+        patient_dict = patient.model_dump(exclude_unset=True)
+        patient_dict = check_and_add_address(patient_dict, db)
+        db.add(Patient(**patient_dict))
+        add_patient_bd(patient_dict["id"], current_doctor.id, db)
 
 
-@router.get("/patient", response_model=list[PatientSchema])
+@router.get("", response_model=list[PatientSchema])
 def get_patient(
     current_doctor: Annotated[Doctor, Depends(get_current_user)],
     patient_id: str | None = None,
@@ -223,7 +197,7 @@ def get_patient(
     return patients_list
 
 
-@router.put("/modify")
+@router.put("")
 def update_patient(
     current_doctor: Annotated[Doctor, Depends(get_current_user)],
     patient_id: str,
@@ -290,7 +264,7 @@ def update_patient(
     )
 
 
-@router.delete("/delete")
+@router.delete("")
 def delete_patient(
     current_doctor: Annotated[Doctor, Depends(get_current_user)],
     patient_id: str,

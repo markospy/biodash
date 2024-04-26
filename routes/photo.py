@@ -52,7 +52,7 @@ async def upload_photo(
             DoctorPhoto(
                 id=current_doctor.id,
                 first_name=current_doctor.first_name,
-                portrait="/avatar/" + current_doctor.id + ".png",
+                portrait="/photos/" + current_doctor.id + ".png",
             ).model_dump(exclude_unset=True)
         )
     )

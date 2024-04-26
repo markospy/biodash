@@ -22,11 +22,11 @@ from models.exceptions import exception_if_already_exists
 router = APIRouter(prefix="/doctor", tags=["Doctors"])
 
 
-def get_doctor_by_id(id: int, db: Session):
+def get_doctor_by_id(id, db: Session):
     """Get doctor by ID"""
     stmt = select(Doctor).where(Doctor.id == id)
-    result = db.scalars(stmt).first()
-    return result
+    doctor_db = db.scalars(stmt).first()
+    return doctor_db
 
 def set_email_information(doctor: dict, email: Email | None):
     """Set email information for the doctor"""
@@ -40,10 +40,10 @@ def set_email_information(doctor: dict, email: Email | None):
 def update_doctor_photo(doctor: Doctor, new_id: int, db: Session):
     """Update doctor photo"""
     if doctor.id:
+        path_photo = os.path.abspath("photos/")
         os.rename(
-            f"../photos/{doctor.id}.png",
-            f"../photos/{new_id}.png",
-        )
+            f"{path_photo}/{doctor.id}.png",
+            f"{path_photo}/{new_id}.png",)
         stmt = (
             update(Doctor)
             .where(Doctor.id == doctor.id)
@@ -51,7 +51,7 @@ def update_doctor_photo(doctor: Doctor, new_id: int, db: Session):
                 DoctorPhoto(
                     id=new_id,
                     first_name=doctor.first_name,
-                    portrait=f"/avatar/{new_id}.png",
+                    portrait=f"/photos/{new_id}.png",
                 ).model_dump(exclude_unset=True)
             )
         )
@@ -91,19 +91,20 @@ def update_doctor_email(current_doctor: Doctor, data: dict, db: Session,):
                 db.add(Email(**email))
         del data["email_address"]
 
-def update_password(new_password:str, currente_password:str, data):
+def update_password(new_password:str, currente_password:str):
     if new_password and not verify_password(new_password, currente_password):
-        data.update(password=get_password_hash(new_password))
+        return get_password_hash(new_password)
     else:
-        data.update(password=currente_password)
+        return currente_password
 
 def update_doctor_id(new_id:int | None, current_id:int):
     if new_id == None:
-        new_id = current_id
+        return current_id
 
 def update_doctor_first_name(new_name:str | None, current_name:str):
     if new_name == None:
-        new_name = current_name
+        return current_name
+
 
 
 @router.post("")
@@ -112,9 +113,8 @@ def register_doctor(doctor: DoctorIn, db: Session = Depends(get_db)):
 
     If you submit an email address, a verification code will be sent to your inbox.
     """
-    result = get_doctor_by_id(doctor.id, db)
-    exception_if_already_exists(result, {"error": "Doctor already exists", "id": doctor.id})
-
+    doctor_db = get_doctor_by_id(doctor.id, db)
+    exception_if_already_exists(doctor_db, {"error": "Doctor already exists", "id": id})
     doctor_bd = doctor.__dict__
     doctor_bd.update(password=get_password_hash(doctor_bd["password"]))
 
@@ -160,13 +160,14 @@ def update_doctor(
 
     If you update your email address, a verification code will be sent to your inbox.
     """
-    update_doctor_photo(current_doctor, new_id=doctor.id, db=db)
-    update_doctor_id(doctor.id, current_doctor.id)
-    update_doctor_first_name(doctor.first_name, current_doctor.first_name)
     doctor_data = doctor.model_dump(exclude_unset=True)
     updated_data = {key: value for key, value in doctor_data.items()}
+
+    update_doctor_photo(current_doctor, new_id=doctor.id, db=db)
+    updated_data['id'] = update_doctor_id(doctor.id, current_doctor.id)
+    updated_data['first_name'] = update_doctor_first_name(doctor.first_name, current_doctor.first_name)
+    updated_data['password'] = update_password(doctor.password, current_doctor.password, updated_data)
     update_doctor_email(current_doctor, updated_data, db)
-    update_password(doctor.password, current_doctor.password, updated_data)
     stmt = (update(Doctor).where(Doctor.id == current_doctor.id).values(**updated_data))
     db.execute(stmt)
     db.commit()
