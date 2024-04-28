@@ -28,6 +28,7 @@ class Doctor(BaseModel):
 
 class DoctorOut(Doctor):
     email_verify: bool
+    photo: str | None = None
 
 
 class DoctorIn(Doctor):

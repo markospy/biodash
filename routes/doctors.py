@@ -1,7 +1,7 @@
 from typing import Annotated
 import os
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import select, update, delete
 from sqlalchemy.orm import Session
@@ -105,6 +105,17 @@ def update_doctor_first_name(new_name:str | None, current_name:str):
     if new_name == None:
         return current_name
 
+def get_url(request: Request, end_point_function: str):
+    """Devuelve la url raíz del servicio"""
+    url = request.url_for(end_point_function)
+    return str(url)[:-6]
+
+def get_url_photo(doctor: Doctor, request: Request, db: Session, end_point: str):
+    """**Get the doctor's profile photo url**"""
+    stmt = select(Doctor).where(Doctor.id == doctor.id)
+    portait_url = db.scalars(stmt).first().portrait
+    url = get_url(request, end_point) + "photos/" + portait_url
+    return url
 
 
 @router.post("")
@@ -134,11 +145,11 @@ def register_doctor(doctor: DoctorIn, db: Session = Depends(get_db)):
 
 
 @router.get("", response_model=DoctorOut)
-def get_doctor(current_doctor: Annotated[Doctor, Depends(get_current_user)], db: Session = Depends(get_db)):
+def get_doctor(current_doctor: Annotated[Doctor, Depends(get_current_user)], request: Request, db: Session = Depends(get_db)):
     """**Get information about the currently authenticated doctor**"""
     doctor_data = current_doctor.__dict__
     doctor = {key: value for key, value in doctor_data.items() if value is not None or key == "password"}
-
+    doctor['photo'] = get_url_photo(current_doctor, request, db, "get_doctor")
     stmt = select(Email).where(Email.doctor_id == current_doctor.id)
     email = db.scalars(stmt).first()
     set_email_information(doctor, email)
