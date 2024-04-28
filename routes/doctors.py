@@ -51,7 +51,7 @@ def update_doctor_photo(doctor: Doctor, new_id: int, db: Session):
                 DoctorPhoto(
                     id=new_id,
                     first_name=doctor.first_name,
-                    portrait=f"/photos/{new_id}.png",
+                    portrait=new_id + ".png",
                 ).model_dump(exclude_unset=True)
             )
         )

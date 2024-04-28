@@ -34,7 +34,7 @@ app = FastAPI(
     description="This Rest API facilitates the control of patients' vital parameters (blood pressure, heart rate and blood glucose). It allows a doctor to create an account and register their patients to keep track of the mentioned parameters.",
 )
 
-app.mount("/avatar", StaticFiles(directory="photos"), name="photos")
+app.mount("/photos", StaticFiles(directory="photos"), name="photos")
 
 app.include_router(root.router)
 app.include_router(doctors.router)

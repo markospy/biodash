@@ -1,8 +1,8 @@
 from typing import Annotated
-from os import getcwd, remove
+import os
 from PIL import Image
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, UploadFile, Request
 from fastapi import status
 from fastapi.responses import JSONResponse, RedirectResponse
 
@@ -16,7 +16,7 @@ from schemas.schemas import DoctorPhoto
 
 router = APIRouter(prefix="/doctor", tags=["Avatar"])
 
-PATH_PHOTOS = getcwd() + "/photos/"
+PATH_PHOTOS = os.path.abspath("photos/") + "/"
 
 
 def create_avatar(filename: str, doctor_id: str):
@@ -25,11 +25,14 @@ def create_avatar(filename: str, doctor_id: str):
     image.thumbnail(size_define)
     image = image.convert("RGB")
     image.save(PATH_PHOTOS + doctor_id + ".png")
-    remove(PATH_PHOTOS + filename)
-    print("success")
+    os.remove(PATH_PHOTOS + filename)
 
+def get_url(request: Request, end_point_function: str):
+    """Devuelve la url raíz del servicio"""
+    url = request.url_for(end_point_function)
+    return str(url)[:-12]
 
-@router.post("/upload_photo/")
+@router.post("/upload_photo")
 async def upload_photo(
     current_doctor: Annotated[Doctor, Depends(get_current_user)],
     background_task: BackgroundTasks,
@@ -52,7 +55,7 @@ async def upload_photo(
             DoctorPhoto(
                 id=current_doctor.id,
                 first_name=current_doctor.first_name,
-                portrait="/photos/" + current_doctor.id + ".png",
+                portrait=current_doctor.id + ".png",
             ).model_dump(exclude_unset=True)
         )
     )
@@ -61,15 +64,19 @@ async def upload_photo(
     return JSONResponse(content={"message": "success"})
 
 
-@router.get("/avatar")
+
+
+@router.get("/photo")
 def get_photo(
     current_doctor: Annotated[Doctor, Depends(get_current_user)],
+    request: Request,
     db: Session = Depends(get_db),
 ):
     """**Get the doctor's profile photo**"""
     stmt = select(Doctor).where(Doctor.id == current_doctor.id)
     portait_url = db.scalars(stmt).first().portrait
+    url = get_url(request, 'get_photo')
     return RedirectResponse(
-        url=f"http://127.0.0.1:8000{portait_url}",
+        url=url + "photos/" + portait_url,
         status_code=status.HTTP_302_FOUND,
     )
