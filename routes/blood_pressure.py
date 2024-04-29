@@ -38,7 +38,7 @@ def manage_null_values(measurement: cvpsOut, result):
 router = APIRouter(prefix="/blood_pressure", tags=["Blood pressure"])
 
 
-@router.post("/add")
+@router.post("")
 def add(
     current_doctor: Annotated[Doctor, Depends(get_current_user)],
     measurement: cvps,
@@ -49,7 +49,7 @@ def add(
 
 
 @router.get(
-    "/{patient_id}/all_measurements",
+    "/{patient_id}",
     response_model=list[cvpsOut],
 )
 def get(
@@ -89,7 +89,7 @@ def update(
     )
 
 
-@router.delete("/delete")
+@router.delete("")
 def delete(
     current_doctor: Annotated[Doctor, Depends(get_current_user)],
     patient_id: str,

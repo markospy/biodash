@@ -29,7 +29,7 @@ def manage_null_values(measurement: bsOut, result):
 router = APIRouter(prefix="/blood_sugar", tags=["Blood sugar"])
 
 
-@router.post("/add")
+@router.post("")
 def add(
     current_doctor: Annotated[Doctor, Depends(get_current_user)],
     measurement: bsIn,
@@ -40,7 +40,7 @@ def add(
 
 
 @router.get(
-    "/{patient_id}/all_measurements",
+    "/{patient_id}",
     response_model=list[bsOut],
 )
 def get(
@@ -75,7 +75,7 @@ def update(
     )
 
 
-@router.delete("/delete")
+@router.delete("")
 def delete(
     current_doctor: Annotated[Doctor, Depends(get_current_user)],
     patient_id: str,
