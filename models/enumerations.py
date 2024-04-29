@@ -29,3 +29,9 @@ class SortBy(Enum):
 class Order(Enum):
     asc = "asc"
     desc = "desc"
+
+
+class Operation(Enum):
+    minimum = 1
+    maximum = 2
+    mean = 3

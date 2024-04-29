@@ -111,4 +111,6 @@ class AnalizeCardiovascular(BaseModel):
 
 
 class AnalizeBloodSugar(BaseModel):
-    value: float
+    minimum: float
+    maximum: float
+    mean: float

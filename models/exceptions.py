@@ -13,3 +13,7 @@ def exception_if_not_exists(data, detail, status_code: status=status.HTTP_404_NO
     if not data:
         raise HTTPException(status_code, detail)
     return
+
+class OperationError(Exception):
+    def __init__(self, msj_error) -> None:
+        self.msj_error = msj_error
