@@ -104,13 +104,12 @@ class BloodSugarLevelIn(BloodSugarLevelOut):
     patient_id: str
 
 
-class AnalizeCardiovascular(BaseModel):
-    systolic: float | None = None
-    diastolic: float | None = None
-    heart_rate: float | None = None
-
-
-class AnalizeBloodSugar(BaseModel):
+class Analize(BaseModel):
     minimum: float
     maximum: float
     mean: float
+
+class AnalizeCardiovascular(BaseModel):
+    systolic: Analize
+    diastolic: Analize
+    heart_rate: Analize

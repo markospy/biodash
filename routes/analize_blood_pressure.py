@@ -1,122 +1,34 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
-from fastapi.exceptions import HTTPException
-from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 
 from dependencies.dependencies import get_db
 from models.models import CardiovascularParameter, Doctor
-from schemas.schemas import AnalizeCardiovascular
+from schemas.schemas import AnalizeCardiovascular, Analize
 from routes.jwt_oauth_doctor import get_current_user
-
-router = APIRouter(prefix="/blood-pressure", tags=["Analize"])
-
-list_params = [
-    CardiovascularParameter.systolic,
-    CardiovascularParameter.diastolic,
-    CardiovascularParameter.heart_rate,
-]
+from routes.calc.calculation import make_analize
 
 
-def configuration(
-    list_params: list,
-    systolic: bool,
-    diastolic: bool,
-    heart_rate: bool,
-    patient_id: str,
-    db: Session,
-    function: func,
-):
-    list_results = []
-    for value in list_params:
-        if value == CardiovascularParameter.systolic and not systolic:
-            list_results.append(None)
-        elif value == CardiovascularParameter.diastolic and not diastolic:
-            list_results.append(None)
-        elif value == CardiovascularParameter.heart_rate and not heart_rate:
-            list_results.append(None)
-        else:
-            stmt = select(function(value)).where(
-                CardiovascularParameter.patient_id == patient_id
-            )
-            result = db.scalar(stmt)
-            if result == None:
-                raise HTTPException(
-                    status_code=404,
-                    detail=f"The patient with id {patient_id} has no records",
-                )
-            list_results.append(result)
-    return list_results
+router = APIRouter(prefix="/analize", tags=["Analize"])
 
 
-@router.get("/mean", response_model=AnalizeCardiovascular)
-def mean(
+@router.get("/blood-pressure", response_model=AnalizeCardiovascular)
+def analize(
     current_doctor: Annotated[Doctor, Depends(get_current_user)],
     patient_id: str,
-    systolic: bool = True,
-    diastolic: bool = True,
-    heart_rate: bool = True,
     db: Session = Depends(get_db),
 ):
-    """**Get the average value of blood pressure and heart rate**"""
-    list_results = configuration(
-        list_params, systolic, diastolic, heart_rate, patient_id, db, func.avg
-    )
+    """**Get the mean, minimum and maximum value of blood pressure and heart rate**"""
 
-    systolic_mean, diastolic_mean, heart_rate_mean = list_results
-
-    analize = AnalizeCardiovascular(
-        systolic=systolic_mean,
-        diastolic=diastolic_mean,
-        heart_rate=heart_rate_mean,
-    )
-    return analize
+    minimum_systolic, maximum_systolic, mean_systolic = make_analize(patient_id, db, CardiovascularParameter.systolic, CardiovascularParameter)
+    minimum_diastolic, maximum_diastolic, mean_diastolic = make_analize(patient_id, db, CardiovascularParameter.diastolic, CardiovascularParameter)
+    minimum_heart_rate, maximum_heart_rate, mean_heart_rate = make_analize(patient_id, db, CardiovascularParameter.heart_rate, CardiovascularParameter)
 
 
-@router.get("/minimum", response_model=AnalizeCardiovascular)
-def minimum(
-    current_doctor: Annotated[Doctor, Depends(get_current_user)],
-    patient_id: str,
-    systolic: bool = True,
-    diastolic: bool = True,
-    heart_rate: bool = True,
-    db: Session = Depends(get_db),
-):
-    """**Get the minimum value of blood pressure and heart rate**"""
-    list_results = configuration(
-        list_params, systolic, diastolic, heart_rate, patient_id, db, func.min
-    )
 
-    systolic_min, diastolic_min, heart_rate_min = list_results
-
-    analize = AnalizeCardiovascular(
-        systolic=systolic_min,
-        diastolic=diastolic_min,
-        heart_rate=heart_rate_min,
-    )
-    return analize
-
-
-@router.get("/maximum", response_model=AnalizeCardiovascular)
-def maximum(
-    current_doctor: Annotated[Doctor, Depends(get_current_user)],
-    patient_id: str,
-    systolic: bool = True,
-    diastolic: bool = True,
-    heart_rate: bool = True,
-    db: Session = Depends(get_db),
-):
-    """**Get the maximum value of blood pressure and heart rate**"""
-    list_results = configuration(
-        list_params, systolic, diastolic, heart_rate, patient_id, db, func.max
-    )
-
-    systolic_max, diastolic_max, heart_rate_max = list_results
-
-    analize = AnalizeCardiovascular(
-        systolic=systolic_max,
-        diastolic=diastolic_max,
-        heart_rate=heart_rate_max,
-    )
-    return analize
+    return AnalizeCardiovascular(
+        systolic=Analize(minimum=minimum_systolic, maximum=maximum_systolic, mean=mean_systolic),
+        diastolic=Analize(minimum=minimum_diastolic, maximum=maximum_diastolic, mean=mean_diastolic),
+        heart_rate=Analize(minimum=minimum_heart_rate, maximum=maximum_heart_rate, mean=mean_heart_rate)
+        )
