@@ -114,10 +114,10 @@ def get_url_photo(doctor: Doctor, request: Request, db: Session, end_point: str)
     """**Get the doctor's profile photo url**"""
     stmt = select(Doctor).where(Doctor.id == doctor.id)
     portait_url = db.scalars(stmt).first().portrait
-    if portait_url:
-        url = get_url(request, end_point) + "photos/" + portait_url
-        return url
-    return "Null"
+    if not portait_url:
+        return
+    url = get_url(request, end_point) + "photos/" + portait_url
+    return url
 
 
 @router.post("")
@@ -186,7 +186,6 @@ def update_doctor(
     db.commit()
     return JSONResponse({"message": "Doctor data was updated successfully."})
 
-# manejo de url vacia cuando no existe foto del doctor
 @router.delete("")
 def delete_doctor(current_doctor: Annotated[Doctor, Depends(get_current_user)], db: Session = Depends(get_db)):
     """**Delete the currently authenticated doctor**"""
