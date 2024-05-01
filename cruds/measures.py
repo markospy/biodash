@@ -1,10 +1,11 @@
 # CRUDs for vital parameters
 from datetime import datetime
 
-from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse
 from sqlalchemy import select, delete, update, and_
 from sqlalchemy.orm import Session
+
+from models.exceptions import exception_if_not_exists, exception_if_already_exists
 
 
 # Create
@@ -21,10 +22,7 @@ def add_measurement(
         )
     )
     result = db.execute(stmt).first()
-    if result:
-        raise HTTPException(
-            status_code=409, detail="Measurement already exists."
-        )
+    exception_if_already_exists(result, "Measurement already exists.")
     measurement_dict = measurement.model_dump()
     measurement_dict["doctor_id"] = doctor_id
     db.add(model_db(**measurement_dict))
@@ -41,11 +39,8 @@ def get_all_measurements(
     """**Obtains all measurements of the patient's cardiovascular parameters**"""
     stmt = select(model_db).where(model_db.patient_id == patient_id)
     results = db.scalars(stmt).all()
-    if not results:
-        raise HTTPException(
-            status_code=404,
-            detail=f"The patient with id {patient_id} has no records",
-        )
+    detail = f"The patient with id {patient_id} has no records"
+    exception_if_not_exists(results, detail)
     return results
 
 
@@ -57,11 +52,7 @@ def update_measurement(
         and_(model_db.patient_id == patient_id, model_db.date == date)
     )
     result = db.scalars(stmt).first()
-    if not result:
-        raise HTTPException(
-            status_code=404, detail="There are no registered patients"
-        )
-
+    exception_if_not_exists(result, "There are no registered patients")
     func(measurement, result)
 
     stmt = (
@@ -86,10 +77,8 @@ def delete_all_measurements(
             and_(model_db.patient_id == patient_id, model_db.date == date)
         )
         result = db.scalars(stmt).all()
-        if not result:
-            raise HTTPException(
-                status_code=404, detail="There is no such measurement"
-            )
+        exception_if_not_exists(result, "There is no such measurement")
+
         stmt = delete(model_db).where(
             and_(model_db.patient_id == patient_id, model_db.date == date)
         )
@@ -101,10 +90,7 @@ def delete_all_measurements(
     else:
         stmt = select(model_db).where(model_db.patient_id == patient_id)
         result = db.scalars(stmt).all()
-        if not result:
-            raise HTTPException(
-                status_code=404, detail="There is no such measurement"
-            )
+        exception_if_not_exists(result, "There is no such measurement")
         stmt = delete(model_db).where(model_db.patient_id == patient_id)
         db.execute(stmt)
         db.commit()

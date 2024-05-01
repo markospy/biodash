@@ -48,10 +48,7 @@ def add(
     return add_measurement(measurement, current_doctor.id, model_db=cvpm, db=db)
 
 
-@router.get(
-    "/{patient_id}",
-    response_model=list[cvpsOut],
-)
+@router.get("", response_model=list[cvpsOut])
 def get(
     current_doctor: Annotated[Doctor, Depends(get_current_user)],
     patient_id: str,
@@ -70,7 +67,7 @@ def get(
     ]
 
 
-@router.put("/{patient_id}_{date}")
+@router.put("")
 def update(
     current_doctor: Annotated[Doctor, Depends(get_current_user)],
     patient_id: int,
