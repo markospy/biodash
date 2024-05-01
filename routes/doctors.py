@@ -127,7 +127,7 @@ def register_doctor(doctor: DoctorIn, db: Session = Depends(get_db)):
     If you submit an email address, a verification code will be sent to your inbox.
     """
     doctor_db = get_doctor_by_id(doctor.id, db)
-    exception_if_already_exists(doctor_db, {"error": "Doctor already exists", "id": id})
+    exception_if_already_exists(doctor_db, {"error": "Doctor already exists", "id": doctor.id})
     doctor_bd = doctor.__dict__
     doctor_bd.update(password=get_password_hash(doctor_bd["password"]))
 
