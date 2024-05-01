@@ -39,10 +39,7 @@ def add(
     return add_measurement(measurement, current_doctor.id, model_db=bsl, db=db)
 
 
-@router.get(
-    "/{patient_id}",
-    response_model=list[bsOut],
-)
+@router.get("",response_model=list[bsOut])
 def get(
     current_doctor: Annotated[Doctor, Depends(get_current_user)],
     patient_id: str,
@@ -56,7 +53,7 @@ def get(
     ]
 
 
-@router.put("/{patient_id}_{date}")
+@router.put("")
 def update(
     current_doctor: Annotated[Doctor, Depends(get_current_user)],
     patient_id: int,
