@@ -9,7 +9,7 @@ from models.models import CardiovascularParameter as cvpm
 from dependencies.dependencies import get_db
 from schemas.schemas import CardiovascularParameter as cvps
 from schemas.schemas import CardiovascularParameterOut as cvpsOut
-from routes.jwt_oauth_doctor import get_current_user
+from routes.oauth import get_current_user
 from cruds.measures import (
     add_measurement,
     get_all_measurements,

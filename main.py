@@ -9,7 +9,7 @@ from routes import (
     blood_pressure,
     blood_sugar,
     doctors,
-    jwt_oauth_doctor,
+    oauth,
     patients,
     email,
     photo,
@@ -45,4 +45,4 @@ app.include_router(analize_blood_pressure.router)
 app.include_router(analize_blood_sugar.router)
 app.include_router(email.router)
 app.include_router(photo.router)
-app.include_router(jwt_oauth_doctor.router)
+app.include_router(oauth.router)

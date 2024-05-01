@@ -15,7 +15,7 @@ from schemas.schemas import (
     DoctorUp,
     EmailSchema,
 )
-from routes.jwt_oauth_doctor import get_password_hash, get_current_user, verify_password
+from routes.oauth import get_password_hash, get_current_user, verify_password
 from sendemail.sendemail import send_email
 from models.exceptions import exception_if_already_exists
 

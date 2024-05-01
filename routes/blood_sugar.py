@@ -9,7 +9,7 @@ from models.models import BloodSugarLevel as bsl
 from dependencies.dependencies import get_db
 from schemas.schemas import BloodSugarLevelOut as bsOut
 from schemas.schemas import BloodSugarLevelIn as bsIn
-from routes.jwt_oauth_doctor import get_current_user
+from routes.oauth import get_current_user
 from cruds.measures import (
     add_measurement,
     get_all_measurements,

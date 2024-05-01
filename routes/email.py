@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from dependencies.dependencies import get_db
 from models.models import Doctor, Email
-from routes.jwt_oauth_doctor import get_current_user
+from routes.oauth import get_current_user
 from sendemail.sendemail import send_email
 
 router = APIRouter(tags=["Email verification"])

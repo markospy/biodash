@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from models.models import Patient, Doctor, Address, doctor_patient
 from dependencies.dependencies import get_db
 from schemas.schemas import PatientSchema, PatientUp
-from routes.jwt_oauth_doctor import get_current_user
+from routes.oauth import get_current_user
 from models.enumerations import Order, SortBy
 from models.exceptions import exception_if_already_exists, exception_if_not_exists
 
