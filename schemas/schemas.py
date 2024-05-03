@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, validator
+from pydantic import BaseModel, EmailStr, validator, Field
 
 from datetime import datetime
 
@@ -18,12 +18,12 @@ class AddressSchema(BaseModel):
 
 
 class Doctor(BaseModel):
-    id: str
-    first_name: str
-    second_name: str | None = None
-    last_name: str | None = None
-    specialty: str | None = None
-    email_address: str | None = None
+    id: str = Field(examples=['3210'])
+    first_name: str = Field(examples=['Marcos'])
+    second_name: str | None = Field(default=None, example='Antonio')
+    last_name: str | None = Field(default=None, example='Avila Morales')
+    specialty: str | None = Field(default=None, example='Doctor')
+    email_address: str | None = Field(default=None, pattern='^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$', example='markos@email.com')
 
 
 class DoctorOut(Doctor):
@@ -32,7 +32,7 @@ class DoctorOut(Doctor):
 
 
 class DoctorIn(Doctor):
-    password: str
+    password: str = Field(min_length=6, examples=["jH3.*3tH2nAs_p"])
 
 
 class DoctorUp(DoctorIn):
@@ -52,18 +52,18 @@ class DoctorPhoto(Doctor):
 
 
 class PatientSchema(BaseModel):
-    id: str
-    first_name: str
-    second_name: str | None = None
-    last_name: str | None = None
-    birth_date: datetime | None = None
-    gender: Gender | None = None
-    height: int | None = None
-    weight: float | None = None
-    scholing: Scholing | None = None
-    employee: bool | None = None
-    married: bool | None = None
-    address: dict | None = None
+    id: str = Field(examples=[39231])
+    first_name: str = Field(example="Javier")
+    second_name: str | None = Field(default=None, example="de la Caridad")
+    last_name: str | None = Field(default=None, example="Hernandez Lao")
+    birth_date: datetime | None = Field(default=None, example="04-29-1979")
+    gender: Gender | None = Field(default=None, examples=["female", "male"])
+    height: int | None = Field(default=None, example=180)
+    weight: float | None = Field(default=None, example=80)
+    scholing: Scholing | None = Field(default=None, examples=["primary", "secunadry", "pre_university", "university", "middle_technical"])
+    employee: bool | None = Field(default=None, example="Mechanic")
+    married: bool | None = Field(default=None, example=True)
+    address: dict | None = Field(default=None, example="{'Cienfuegos', 'Pastorita'}")
 
 
 class PatientUp(PatientSchema):
@@ -78,30 +78,30 @@ class PatientUp(PatientSchema):
 
 
 class DoctorPatient(BaseModel):
-    doctor_id: str
-    patient_id: str
+    doctor_id: str = Field(example=3210)
+    patient_id: str = Field(example=39231)
 
 
 class CardiovascularParameterOut(BaseModel):
-    systolic: int | None = None
-    diastolic: int | None = None
-    heart_rate: int | None = None
-    date: datetime | None = None
+    systolic: int | None = Field(default=None, example=120)
+    diastolic: int | None = Field(default=None, example=80)
+    heart_rate: int | None = Field(default=None, example=72)
+    date: datetime | None = Field(default=None, example="04-29-2024")
 
 
 class CardiovascularParameter(CardiovascularParameterOut):
     systolic: int = 120
     diastolic: int = 80
-    patient_id: str
+    patient_id: str = Field(example=39231)
 
 
 class BloodSugarLevelOut(BaseModel):
-    date: datetime | None = None
-    value: float | None = None
+    date: datetime | None = Field(default=None, example="04-29-2024")
+    value: float | None = Field(default=None, example=5.2)
 
 
 class BloodSugarLevelIn(BloodSugarLevelOut):
-    patient_id: str
+    patient_id: str = Field(example=39231)
 
 
 class Analize(BaseModel):

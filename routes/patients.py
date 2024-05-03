@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, Body
 from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse
 from sqlalchemy import select, delete, update, and_, asc, desc
@@ -10,7 +10,7 @@ from models.models import Patient, Doctor, Address, doctor_patient
 from dependencies.dependencies import get_db
 from schemas.schemas import PatientSchema, PatientUp
 from routes.oauth import get_current_user
-from models.enumerations import Order, SortBy
+from models.enumerations import Order, SortBy, Scholing, Gender
 from models.exceptions import exception_if_already_exists, exception_if_not_exists
 
 
