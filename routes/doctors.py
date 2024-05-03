@@ -1,7 +1,7 @@
 from typing import Annotated
 import os
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, status
 from fastapi.responses import JSONResponse
 from sqlalchemy import select, update, delete
 from sqlalchemy.orm import Session
@@ -120,7 +120,7 @@ def get_url_photo(doctor: Doctor, request: Request, db: Session, end_point: str)
     return url
 
 
-@router.post("")
+@router.post("", status_code=status.HTTP_201_CREATED)
 def register_doctor(doctor: DoctorIn, db: Session = Depends(get_db)):
     """**Register a new doctor**
 
@@ -143,10 +143,10 @@ def register_doctor(doctor: DoctorIn, db: Session = Depends(get_db)):
     del doctor_bd["email_address"]
     db.add(Doctor(**doctor_bd))
     db.commit()
-    return JSONResponse({"message": "Doctor registration successful", "id": doctor.id})
+    return JSONResponse(content={"message": "Doctor registration successful", "id": doctor.id})
 
 
-@router.get("", response_model=DoctorOut)
+@router.get("", response_model=DoctorOut, status_code=status.HTTP_200_OK)
 def get_doctor(current_doctor: Annotated[Doctor, Depends(get_current_user)], request: Request, db: Session = Depends(get_db)):
     """**Get information about the currently authenticated doctor**"""
     doctor_data = current_doctor.__dict__
@@ -158,7 +158,7 @@ def get_doctor(current_doctor: Annotated[Doctor, Depends(get_current_user)], req
     return DoctorOut(**doctor)
 
 
-@router.put("")
+@router.put("", status_code=status.HTTP_200_OK)
 def update_doctor(
     current_doctor: Annotated[Doctor, Depends(get_current_user)],
     doctor: DoctorUp,
@@ -186,7 +186,7 @@ def update_doctor(
     db.commit()
     return JSONResponse({"message": "Doctor data was updated successfully."})
 
-@router.delete("")
+@router.delete("", status_code=status.HTTP_200_OK)
 def delete_doctor(current_doctor: Annotated[Doctor, Depends(get_current_user)], db: Session = Depends(get_db)):
     """**Delete the currently authenticated doctor**"""
     stmt = delete(Doctor).where(Doctor.id == current_doctor.id)
