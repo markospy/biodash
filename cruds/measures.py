@@ -9,12 +9,7 @@ from models.exceptions import exception_if_not_exists, exception_if_already_exis
 
 
 # Create
-def add_measurement(
-    measurement,
-    doctor_id,
-    model_db,
-    db: Session,
-):
+def add_measurement(measurement, doctor_id, model_db, db: Session):
     stmt = select(model_db).where(
         and_(
             model_db.patient_id == measurement.patient_id,
@@ -31,11 +26,7 @@ def add_measurement(
 
 
 # Read
-def get_all_measurements(
-    patient_id: str,
-    model_db,
-    db: Session,
-):
+def get_all_measurements(patient_id: str, model_db, db: Session):
     """**Obtains all measurements of the patient's cardiovascular parameters**"""
     stmt = select(model_db).where(model_db.patient_id == patient_id)
     results = db.scalars(stmt).all()
@@ -45,9 +36,7 @@ def get_all_measurements(
 
 
 # Update
-def update_measurement(
-    func, patient_id: int, date: datetime, measurement, model_db, db: Session
-):
+def update_measurement(func, patient_id: int, date: datetime, measurement, model_db, db: Session):
     stmt = select(model_db).where(
         and_(model_db.patient_id == patient_id, model_db.date == date)
     )
@@ -66,12 +55,7 @@ def update_measurement(
 
 
 # Delete
-def delete_all_measurements(
-    model_db,
-    db: Session,
-    patient_id: str,
-    date: datetime | None = None,
-):
+def delete_all_measurements(model_db, db: Session, patient_id: str, date: datetime | None = None):
     if date:
         stmt = select(model_db).where(
             and_(model_db.patient_id == patient_id, model_db.date == date)

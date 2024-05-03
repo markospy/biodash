@@ -22,21 +22,6 @@ from models.exceptions import exception_if_already_exists
 router = APIRouter(prefix="/doctor", tags=["Doctors"])
 
 
-def get_doctor_by_id(id, db: Session):
-    """Get doctor by ID"""
-    stmt = select(Doctor).where(Doctor.id == id)
-    doctor_db = db.scalars(stmt).first()
-    return doctor_db
-
-def set_email_information(doctor: dict, email: Email | None):
-    """Set email information for the doctor"""
-    if email:
-        doctor["email_address"] = email.email_address
-        doctor["email_verify"] = email.email_verify
-    else:
-        doctor["email_address"] = None
-        doctor["email_verify"] = False
-
 def update_doctor_photo(doctor: Doctor, new_id: int, db: Session):
     """Update doctor photo"""
     if doctor.id:
@@ -60,20 +45,12 @@ def update_doctor_photo(doctor: Doctor, new_id: int, db: Session):
 def update_doctor_email(current_doctor: Doctor, data: dict, db: Session,):
     """Update doctor email"""
     if data.get("email_address"):
-        if data.get("first_name"):
-            name = data["first_name"]
-        else:
-            name = current_doctor.first_name
-        if data.get("id"):
-            id = data["id"]
-        else:
-            id = current_doctor.id
         stmt = select(Email).where(Email.doctor_id == current_doctor.id)
-        email_bd = db.scalars(stmt).first()
+        email_bd = db.scalar(stmt).first()
         if email_bd:
             email_bd = email_bd.email_address
         if email_bd != data["email_address"]:
-            code = send_email(name,data["email_address"])
+            code = send_email(data["first_name"],data["email_address"])
             email = EmailSchema(
                 email_address=data["email_address"],
                 doctor_id=id,
@@ -91,19 +68,24 @@ def update_doctor_email(current_doctor: Doctor, data: dict, db: Session,):
                 db.add(Email(**email))
         del data["email_address"]
 
-def update_password(new_password:str, currente_password:str):
-    if new_password and not verify_password(new_password, currente_password):
-        return get_password_hash(new_password)
+def get_doctor_by_id(id, db: Session):
+    """Get doctor by ID"""
+    stmt = select(Doctor).where(Doctor.id == id)
+    doctor_db = db.scalars(stmt).first()
+    return doctor_db
+
+def set_email_information(doctor: dict, email: Email | None):
+    """Set email information for the doctor"""
+    if email:
+        doctor["email_address"] = email.email_address
+        doctor["email_verify"] = email.email_verify
     else:
-        return currente_password
+        doctor["email_address"] = None
+        doctor["email_verify"] = False
 
-def update_doctor_id(new_id:int | None, current_id:int):
-    if new_id == None:
-        return current_id
-
-def update_doctor_first_name(new_name:str | None, current_name:str):
-    if new_name == None:
-        return current_name
+def update_doctor_info(new_data:str | int | None, current_data:str | int | None):
+    if new_data == None or new_data != current_data:
+        return current_data
 
 def get_url(request: Request, end_point_function: str):
     """Devuelve la url raíz del servicio"""
@@ -177,9 +159,13 @@ def update_doctor(
     updated_data = {key: value for key, value in doctor_data.items()}
 
     update_doctor_photo(current_doctor, new_id=doctor.id, db=db)
-    updated_data['id'] = update_doctor_id(doctor.id, current_doctor.id)
-    updated_data['first_name'] = update_doctor_first_name(doctor.first_name, current_doctor.first_name)
-    updated_data['password'] = update_password(doctor.password, current_doctor.password, updated_data)
+    updated_data['id'] = update_doctor_info(doctor.id, current_doctor.id)
+    updated_data['first_name'] = update_doctor_info(doctor.first_name, current_doctor.first_name)
+
+    if not verify_password(doctor.password, current_doctor.password):
+        #Si es la misma contraseña no la sobreescribe en la base de datos
+        updated_data['password'] = update_doctor_info(doctor.password, current_doctor.password)
+
     update_doctor_email(current_doctor, updated_data, db)
     stmt = (update(Doctor).where(Doctor.id == current_doctor.id).values(**updated_data))
     db.execute(stmt)
