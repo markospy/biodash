@@ -27,7 +27,7 @@ class Doctor(BaseModel):
 
 class DoctorOut(Doctor):
     email_verify: bool
-    photo: str | None = None
+    photo: str | None = Field(default=None, example='http://biodash.com/photos/3210.png')
 
 
 class DoctorIn(Doctor):
