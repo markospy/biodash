@@ -11,6 +11,7 @@ class Scholing(Enum):
     pre_university = 3
     university = 4
     middle_technical = 5
+    other = 6
 
 
 class SortBy(Enum):

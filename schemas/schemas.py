@@ -2,7 +2,7 @@ from pydantic import BaseModel, EmailStr, validator, Field
 
 from datetime import datetime
 
-from models.models import Gender, Scholing
+from models.enumerations import Gender, Scholing
 
 
 class EmailSchema(BaseModel):
@@ -14,16 +14,16 @@ class EmailSchema(BaseModel):
 
 class AddressSchema(BaseModel):
     address_id: int
-    address: dict
+    address: dict = Field(example={'Provincia':'Ciefuegos', 'Barrio':'Pastorita'}, description='Recibe un objeto')
 
 
 class Doctor(BaseModel):
-    id: str = Field(examples=['3210'])
-    first_name: str = Field(examples=['Marcos'])
+    id: str = Field(example='3210', description="El formato de este id es distinto en cada país, puede ser un número o una cadena de letras y dígitos")
+    first_name: str = Field(example='Marcos')
     second_name: str | None = Field(default=None, example='Antonio')
-    last_name: str | None = Field(default=None, example='Avila Morales')
-    specialty: str | None = Field(default=None, example='Doctor')
-    email_address: str | None = Field(default=None, pattern='^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$', example='markos@email.com')
+    last_name: str = Field(example='Avila Morales')
+    specialty: str = Field(example='Médico General')
+    email_address: str = Field(example='markos@email.com', pattern='^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$')
 
 
 class DoctorOut(Doctor):
@@ -32,7 +32,7 @@ class DoctorOut(Doctor):
 
 
 class DoctorIn(Doctor):
-    password: str = Field(min_length=6, examples=["jH3.*3tH2nAs_p"])
+    password: str = Field(min_length=6, example='jH3.*3tH2nAs_p')
 
 
 class DoctorUp(DoctorIn):
@@ -52,18 +52,18 @@ class DoctorPhoto(Doctor):
 
 
 class PatientSchema(BaseModel):
-    id: str = Field(examples=[39231])
+    id: str = Field(example='39231', description='Debería usarse el CI del paciente o su código identificativo en el sistema de salud de su país')
     first_name: str = Field(example="Javier")
     second_name: str | None = Field(default=None, example="de la Caridad")
-    last_name: str | None = Field(default=None, example="Hernandez Lao")
+    last_name: str = Field(example="Hernandez Lao")
     birth_date: datetime | None = Field(default=None, example="04-29-1979")
-    gender: Gender | None = Field(default=None, examples=["female", "male"])
+    gender: Gender | None = Field(default=None, examples=["female", "male"], description='Solo puede recibir alguno de los valores de ejemplo')
     height: int | None = Field(default=None, example=180)
     weight: float | None = Field(default=None, example=80)
-    scholing: Scholing | None = Field(default=None, examples=["primary", "secunadry", "pre_university", "university", "middle_technical"])
+    scholing: Scholing | None = Field(default=None, examples=["primary", "secunadry", "pre_university", "university", "middle_technical"], description='Solo puede recibir alguno de los valores de ejemplo')
     employee: bool | None = Field(default=None, example="Mechanic")
     married: bool | None = Field(default=None, example=True)
-    address: dict | None = Field(default=None, example="{'Cienfuegos', 'Pastorita'}")
+    address: dict | None = Field(default=None, example={'Provincia':'Ciefuegos', 'Barrio':'Pastorita'}, description='Recibe un objeto')
 
 
 class PatientUp(PatientSchema):
