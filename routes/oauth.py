@@ -41,18 +41,15 @@ def get_password_hash(password):
 
 
 def get_user(doctor_id: str, db: Session):
-    doctor = db.scalars(
-        select(Doctor).where(Doctor.id == doctor_id)
-    ).one_or_none()
+    doctor = db.scalars(select(Doctor).where(Doctor.id == doctor_id)).one_or_none()
+
     if doctor:
         return DoctorIn(
             id=doctor.id,
             first_name=doctor.first_name,
-            second_name=doctor.second_name,
             last_name=doctor.last_name,
             specialty=doctor.specialty,
             password=doctor.password,
-            portrait=doctor.portrait,
         )
 
 

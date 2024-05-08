@@ -22,7 +22,7 @@ class Doctor(BaseModel):
     first_name: str = Field(example='Marcos Antonio')
     last_name: str = Field(example='Avila Morales')
     specialty: str = Field(example='Médico General')
-    email_address: str = Field(example='markos@email.com', pattern='^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$')
+    email_address: str | None = Field(example='markos@email.com', pattern='^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$', default=None)
 
 
 class DoctorOut(Doctor):
