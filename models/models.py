@@ -43,7 +43,6 @@ class Doctor(Base):
 
     id: Mapped[str] = mapped_column(String(30), primary_key=True)
     first_name: Mapped[str] = mapped_column(String(30))
-    second_name: Mapped[str | None] = mapped_column(String(30))
     last_name: Mapped[str | None] = mapped_column(String(30))
     specialty: Mapped[str | None] = mapped_column(String(30))
     password: Mapped[str] = mapped_column(String(255))
@@ -64,7 +63,6 @@ class Patient(Base):
 
     id: Mapped[str] = mapped_column(String(30), primary_key=True)
     first_name: Mapped[str] = mapped_column(String(30))
-    second_name: Mapped[str | None] = mapped_column(String(30))
     last_name: Mapped[str | None] = mapped_column(String(30))
     birth_date: Mapped[dt | None] = mapped_column(DateTime)
     gender: Mapped[Gender | None] = mapped_column(Enum(Gender))

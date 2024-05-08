@@ -19,8 +19,7 @@ class AddressSchema(BaseModel):
 
 class Doctor(BaseModel):
     id: str = Field(example='3210', description="El formato de este id es distinto en cada país, puede ser un número o una cadena de letras y dígitos")
-    first_name: str = Field(example='Marcos')
-    second_name: str | None = Field(default=None, example='Antonio')
+    first_name: str = Field(example='Marcos Antonio')
     last_name: str = Field(example='Avila Morales')
     specialty: str = Field(example='Médico General')
     email_address: str = Field(example='markos@email.com', pattern='^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$')
@@ -54,7 +53,6 @@ class DoctorPhoto(Doctor):
 class PatientSchema(BaseModel):
     id: str = Field(example='39231', description='Debería usarse el CI del paciente o su código identificativo en el sistema de salud de su país')
     first_name: str = Field(example="Javier")
-    second_name: str | None = Field(default=None, example="de la Caridad")
     last_name: str = Field(example="Hernandez Lao")
     birth_date: datetime | None = Field(default=None, example="04-29-1979")
     gender: Gender | None = Field(default=None, examples=["female", "male"], description='Solo puede recibir alguno de los valores de ejemplo')
