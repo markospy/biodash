@@ -41,7 +41,7 @@ def get_password_hash(password):
 
 
 def get_user(doctor_id: str, db: Session):
-    doctor = db.scalars(select(Doctor).where(Doctor.id == doctor_id)).one_or_none()
+    doctor = db.scalar(select(Doctor).where(Doctor.id == doctor_id))
 
     if doctor:
         return DoctorIn(
@@ -110,7 +110,5 @@ def login_for_access_token(
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token_expires = timedelta(minutes=env_loader.acces_token_expire_minutes)
-    access_token = create_access_token(
-        data={"sub": doctor.id}, expires_delta=access_token_expires
-    )
+    access_token = create_access_token(data={"sub": doctor.id}, expires_delta=access_token_expires)
     return {"access_token": access_token, "token_type": "bearer"}
