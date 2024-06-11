@@ -7,14 +7,10 @@ from sqlalchemy import select, update, delete
 from sqlalchemy.orm import Session
 
 from dependencies.dependencies import get_db
-from models.models import Doctor, Email
-from schemas.schemas import (
-    DoctorIn,
-    DoctorOut,
-    DoctorPhoto,
-    DoctorUp,
-    EmailSchema,
-)
+from models.models import Email, Doctor
+from schemas.schemas import EmailSchema, DoctorIn, DoctorOut, DoctorUp
+
+
 from routes.oauth import get_password_hash, get_current_user, verify_password
 from sendemail.sendemail import send_email
 from models.exceptions import exception_if_already_exists
@@ -25,12 +21,17 @@ router = APIRouter(prefix="/doctor", tags=["Doctors"])
 def update_photo_name(doctor: Doctor, new_id: str | None, db: Session):
     """Update doctor photo"""
     if new_id:
-        path_photo = os.path.abspath("photos/")
-        os.rename(
-            f"{path_photo}/{doctor.id}.png",
-            f"{path_photo}/{new_id}.png",
-        )
-        return f"{new_id}.png"
+        try:
+            path_photo = os.path.abspath("photos/")
+            os.rename(
+                f"{path_photo}/{doctor.id}.png",
+                f"{path_photo}/{new_id}.png",
+            )
+            return f"{new_id}.png"
+        except FileNotFoundError:
+            pass
+    else:
+        return None
 
 
 def update_doctor_email(new_email: str | None, doctor: Doctor, db: Session, doctor_id: str | None = None):
@@ -145,9 +146,13 @@ def register_doctor(doctor: DoctorIn, db: Session = Depends(get_db)):
 
 @router.get("", response_model=DoctorOut, status_code=status.HTTP_200_OK)
 def get_doctor(
-    current_doctor: Annotated[Doctor, Depends(get_current_user)], request: Request, db: Session = Depends(get_db)
+    current_doctor: Annotated[Doctor, Depends(get_current_user)],
+    request: Request,
+    db: Session = Depends(get_db),
 ):
-    """**Get information about the currently authenticated doctor**"""
+    """
+    **Get information about the currently authenticated doctor**
+    """
     doctor_data = current_doctor.__dict__
     doctor = {key: value for key, value in doctor_data.items() if value is not None}
     doctor["photo"] = get_url_photo(current_doctor, request, db, "get_doctor")
@@ -189,8 +194,13 @@ def update_doctor(
 
 
 @router.delete("", status_code=status.HTTP_200_OK)
-def delete_doctor(current_doctor: Annotated[Doctor, Depends(get_current_user)], db: Session = Depends(get_db)):
-    """**Delete the currently authenticated doctor**"""
+def delete_doctor(
+    current_doctor: Annotated[Doctor, Depends(get_current_user)],
+    db: Session = Depends(get_db),
+):
+    """
+    **Delete the currently authenticated doctor**
+    """
     stmt = delete(Doctor).where(Doctor.id == current_doctor.id)
     db.execute(stmt)
     db.commit()

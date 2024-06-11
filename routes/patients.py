@@ -16,6 +16,7 @@ from models.exceptions import exception_if_already_exists, exception_if_not_exis
 
 router = APIRouter(prefix="/patients", tags=["Patients"])
 
+
 def get_patient_by_id_and_doctor_id(patient_id, doctor_id, db: Session):
     """Get patient by ID"""
 
@@ -23,10 +24,12 @@ def get_patient_by_id_and_doctor_id(patient_id, doctor_id, db: Session):
     patient_db = db.scalars(stmt).first()
     return patient_db
 
+
 def get_patient_by_id(id, db: Session):
     stmt = select(Patient).where(Patient.id == id)
     patient_db = db.scalars(stmt).first()
     return patient_db
+
 
 def check_and_add_address(patient: dict, db: Session):
     if patient.get("address"):
@@ -41,11 +44,13 @@ def check_and_add_address(patient: dict, db: Session):
     del patient["address"]
     return patient
 
+
 def add_patient_bd(patient_id, doctor_id, db: Session):
     smt = doctor_patient.insert().values(patient_id=patient_id, doctor_id=doctor_id)
     db.execute(smt)
     db.commit()
     return JSONResponse({"message": "Patient registration successful", "id": patient_id})
+
 
 def patient_exist_alert(patient: dict):
     """Envia un alerta si el diccionario con los datos del paciente no esta vacio."""
@@ -57,6 +62,7 @@ def patient_exist_alert(patient: dict):
             },
             status_code=status.HTTP_226_IM_USED,
         )
+
 
 @router.post("")
 def add_patient(
@@ -94,10 +100,11 @@ def add_patient(
 def get_patient(
     current_doctor: Annotated[Doctor, Depends(get_current_user)],
     patient_id: str | None = None,
-    filter_by: SortBy | None = None,
+    filter_by: SortBy = None,
+    value=None,
     limit: int | None = None,
     offset: int | None = None,
-    order: Order | None = None,
+    order: Order = None,
     db: Session = Depends(get_db),
 ):
     """**Gets a patient** with their id or a **list of them** using a set of filters and sort order
@@ -106,7 +113,9 @@ def get_patient(
 
         patient_id (str | None, optional): Patient id. Defaults to None.
 
-        filter_by (SortBy | None, optional): Sorting criteria: first_name, second_name, last_name, birth_date, height, weight, scholing, employee or married. Defaults to first_name.
+        filter_by (SortBy | None, optional): Sorting criteria: first_name, last_name, birth_date, gender, height, weight, scholing, employee or married. Defaults to first_name.
+
+        value: valor que se le aplica al filtro
 
         limit (int | None, optional): Output size. Defaults to all.
 
@@ -116,11 +125,7 @@ def get_patient(
     """
     if patient_id:
         stmt = (
-            select(Patient)
-            .join(Patient.doctors)
-            .where(
-                and_(Patient.id == patient_id, Doctor.id == current_doctor.id)
-            )
+            select(Patient).join(Patient.doctors).where(and_(Patient.id == patient_id, Doctor.id == current_doctor.id))
         )
         patient_db = db.scalars(stmt).first()
         if not patient_db:
@@ -137,24 +142,24 @@ def get_patient(
         return [PatientSchema(**patient_db)]
 
     match filter_by:
-        case SortBy.first_name:
+        case "first name":
             filter = Patient.first_name
-        case SortBy.second_name:
-            filter = Patient.second_name
-        case SortBy.last_name:
+        case "last name":
             filter = Patient.last_name
-        case SortBy.birth_date:
+        case "birth date":
             filter = Patient.birth_date
-        case SortBy.height:
+        case "height":
             filter = Patient.height
-        case SortBy.weight:
+        case "weight":
             filter = Patient.weight
-        case SortBy.scholing:
+        case "scholing":
             filter = Patient.scholing
-        case SortBy.employee:
+        case "employee":
             filter = Patient.employee
         case SortBy.married:
             filter = Patient.married
+        case "gender":
+            filter = Patient.gender
         case _:
             filter = Patient.first_name
 
@@ -162,7 +167,7 @@ def get_patient(
         stmt = (
             select(Patient)
             .join(Patient.doctors)
-            .where(Doctor.id == current_doctor.id)
+            .where(Doctor.id == current_doctor.id, filter == value)
             .order_by(asc(filter))
             .offset(offset)
             .limit(limit)
@@ -171,7 +176,7 @@ def get_patient(
         stmt = (
             select(Patient)
             .join(Patient.doctors)
-            .where(Doctor.id == current_doctor.id)
+            .where(Doctor.id == current_doctor.id, filter == value)
             .order_by(desc(filter))
             .offset(offset)
             .limit(limit)
@@ -187,9 +192,7 @@ def get_patient(
     for patient_db in patients_db:
         patient_db = patient_db.__dict__
         if patient_db.get("address_id"):
-            stmt = select(Address).where(
-                Address.id == patient_db.get("address_id")
-            )
+            stmt = select(Address).where(Address.id == patient_db.get("address_id"))
             address = db.scalars(stmt).first()
             if address:
                 patient_db["address"] = address.address
@@ -214,11 +217,7 @@ def update_patient(
 
         patient_id (str): Patient id.
     """
-    stmt = (
-        select(Patient)
-        .join(Patient.doctors)
-        .where(and_(Patient.id == patient_id, Doctor.id == current_doctor.id))
-    )
+    stmt = select(Patient).join(Patient.doctors).where(and_(Patient.id == patient_id, Doctor.id == current_doctor.id))
     patient_db = db.scalars(stmt).first()
     if not patient_db:
         raise HTTPException(
@@ -232,9 +231,7 @@ def update_patient(
 
     patient_dict = patient.model_dump(exclude_unset=True)
     if patient_dict.get("address"):
-        address_db = db.scalars(
-            select(Address).where(Address.address == patient_dict["address"])
-        ).first()
+        address_db = db.scalars(select(Address).where(Address.address == patient_dict["address"])).first()
         if not address_db:
             address = Address(address=patient_dict["address"])
             db.add(address)
@@ -248,9 +245,7 @@ def update_patient(
         patient_dict["address"] = address.id
     del patient_dict["address"]
 
-    stmt = (
-        update(Patient).where(Patient.id == patient_id).values(**patient_dict)
-    )
+    stmt = update(Patient).where(Patient.id == patient_id).values(**patient_dict)
     if patient_dict.get("id"):
         db.execute(
             doctor_patient.update()
@@ -259,9 +254,7 @@ def update_patient(
         )
     db.execute(stmt)
     db.commit()
-    return JSONResponse(
-        f"The info of the patient {patient.id} has been changed successfully."
-    )
+    return JSONResponse(f"The info of the patient {patient.id} has been changed successfully.")
 
 
 @router.delete("")
@@ -270,11 +263,7 @@ def delete_patient(
     patient_id: str,
     db: Session = Depends(get_db),
 ):
-    stmt = (
-        select(Patient)
-        .join(Patient.doctors)
-        .where(and_(Patient.id == patient_id, Doctor.id == current_doctor.id))
-    )
+    stmt = select(Patient).join(Patient.doctors).where(and_(Patient.id == patient_id, Doctor.id == current_doctor.id))
     patient_db = db.scalars(stmt).first()
     if not patient_db:
         raise HTTPException(
@@ -282,9 +271,7 @@ def delete_patient(
             detail="This patient does not exist.",
         )
 
-    stmt = doctor_patient.select().where(
-        doctor_patient.c.patient_id == patient_id
-    )
+    stmt = doctor_patient.select().where(doctor_patient.c.patient_id == patient_id)
     result = len(db.scalars(stmt).all())
     if result == 1:
         stmt = delete(Patient).where(Patient.id == patient_id)
@@ -298,6 +285,4 @@ def delete_patient(
     )
     db.execute(stmt)
     db.commit()
-    return JSONResponse(
-        f"The user patient {patient_id} has been successfully deleted."
-    )
+    return JSONResponse(f"The user patient {patient_id} has been successfully deleted.")
