@@ -1,24 +1,24 @@
 from enum import Enum
 
-class Gender(Enum):
-    male = 1
-    female = 2
+
+class Gender(str, Enum):
+    male = "male"
+    female = "female"
 
 
-class Scholing(Enum):
-    primary = 1
-    secondary = 2
-    pre_university = 3
-    university = 4
-    middle_technical = 5
-    other = 6
+class Scholing(str, Enum):
+    primary = "primary"
+    secondary = "secondary"
+    pre_university = "pre university"
+    university = "university"
+    middle_technical = "middle technical"
+    other = "other"
 
 
-class SortBy(Enum):
-    first_name = "first_name"
-    second_name = "second_name"
-    last_name = "last_name"
-    birth_date = "birth_date"
+class SortBy(str, Enum):
+    first_name = "first name"
+    last_name = "last name"
+    birth_date = "birth date"
     gender = "gender"
     height = "height"
     weight = "weight"
@@ -27,12 +27,12 @@ class SortBy(Enum):
     married = "married"
 
 
-class Order(Enum):
+class Order(str, Enum):
     asc = "asc"
     desc = "desc"
 
 
-class Operation(Enum):
-    minimum = 1
-    maximum = 2
-    mean = 3
+class Operation(str, Enum):
+    minimum = "max"
+    maximum = "min"
+    mean = "mean"
