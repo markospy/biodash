@@ -13,7 +13,7 @@ from routes import (
     patients,
     email,
     photo,
-    root
+    root,
 )
 from database.database import create_tables
 
