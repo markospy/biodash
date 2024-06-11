@@ -98,31 +98,35 @@ class DoctorPatient(BaseModel):
     patient_id: str
 
 
-class CardiovascularParameterIn(BaseModel):
-    id: int
-    systolic: int
-    diastolic: int
-    heart_rate: int
-    date: datetime
+class CardiovascularParameterUpdate(BaseModel):
+    systolic: int | None = None
+    diastolic: int | None = None
+    heart_rate: int | None = None
+    date: datetime | None = None
 
 
-class CardiovascularParameterOut(CardiovascularParameterIn):
+class CardiovascularParameter(CardiovascularParameterUpdate):
     patient_id: str
 
 
-class BloodSugarLevel(BaseModel):
-    patient_id: str | None = None
-    date: datetime | None = None
-    value: float
+class CardiovascularParameterOut(BaseModel):
+    patient_id: str
+    measures: List[CardiovascularParameterUpdate]
 
 
 class BloodSugarLevelUpdate(BaseModel):
     date: datetime | None = None
     value: float | None = None
 
+
+class BloodSugarLevel(BloodSugarLevelUpdate):
+    patient_id: str | None = None
+
+
 class BloodSugarLevelOut(BaseModel):
     patient_id: int
     measures: List[BloodSugarLevelUpdate]
+
 
 class Analize(BaseModel):
     minimum: float
