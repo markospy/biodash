@@ -7,18 +7,17 @@ from sqlalchemy.orm import Session
 from models.models import Doctor
 from models.models import CardiovascularParameter as cvpm
 from dependencies.dependencies import get_db
-from schemas.schemas import CardiovascularParameter as cvps
-from schemas.schemas import CardiovascularParameterOut as cvpsOut
+from schemas.schemas import CardiovascularParameter, CardiovascularParameterUpdate, CardiovascularParameterOut
 from routes.oauth import get_current_user
 from cruds.measures import (
     add_measurement,
     get_all_measurements,
-    delete_all_measurements,
+    delete_measurements,
     update_measurement,
 )
 
 
-def manage_null_values(measurement: cvpsOut, result):
+def manage_null_values(measurement: CardiovascularParameterOut, result):
     if measurement.systolic == None:
         measurement.systolic = result.systolic
     if measurement.diastolic == None:
@@ -41,14 +40,14 @@ router = APIRouter(prefix="/blood_pressure", tags=["Blood pressure"])
 @router.post("")
 def add(
     current_doctor: Annotated[Doctor, Depends(get_current_user)],
-    measurement: cvps,
+    measurement: CardiovascularParameter,
     db: Session = Depends(get_db),
 ):
     """**Adds a new measurement of the main cardiovascular parameters**"""
     return add_measurement(measurement, current_doctor.id, model_db=cvpm, db=db)
 
 
-@router.get("", response_model=list[cvpsOut])
+@router.get("", response_model=CardiovascularParameterOut)
 def get(
     current_doctor: Annotated[Doctor, Depends(get_current_user)],
     patient_id: str,
@@ -56,44 +55,52 @@ def get(
 ):
     """**Obtains all measurements of the patient's cardiovascular parameters**"""
     measurements = get_all_measurements(patient_id, model_db=cvpm, db=db)
-    return [
-        cvpsOut(
-            systolic=measurement.systolic,
-            diastolic=measurement.diastolic,
-            heart_rate=measurement.heart_rate,
-            date=measurement.date,
-        )
-        for measurement in measurements
-    ]
+    return CardiovascularParameterOut(
+        patient_id=patient_id,
+        measures=[
+            CardiovascularParameterUpdate(
+                systolic=measurement.systolic,
+                diastolic=measurement.diastolic,
+                heart_rate=measurement.heart_rate,
+                date=measurement.date,
+            )
+            for measurement in measurements
+        ],
+    )
 
 
 @router.put("")
 def update(
     current_doctor: Annotated[Doctor, Depends(get_current_user)],
-    patient_id: int,
-    date: datetime,
-    measurement: cvpsOut,
+    measurement_id: int,
+    measurement: CardiovascularParameterUpdate,
     db: Session = Depends(get_db),
 ):
     """**Update a measurement**"""
     return update_measurement(
         manage_null_values,
-        patient_id,
-        date,
+        measurement_id,
         measurement,
         model_db=cvpm,
         db=db,
     )
 
 
-@router.delete("")
+@router.delete("/all", summary="Delete all patient measures")
 def delete(
     current_doctor: Annotated[Doctor, Depends(get_current_user)],
     patient_id: str,
-    date: datetime | None = None,
     db: Session = Depends(get_db),
 ):
-    """**Deletes a measurement** for a patient on the specified date and time"""
-    return delete_all_measurements(
-        model_db=cvpm, db=db, patient_id=patient_id, date=date
-    )
+    """**Deletes all measurement** for a patient"""
+    return delete_measurements(model_db=cvpm, db=db, patient_id=patient_id)
+
+
+@router.delete("/byId", summary="Delete measures by ID")
+def delete(
+    current_doctor: Annotated[Doctor, Depends(get_current_user)],
+    measurement_id: int,
+    db: Session = Depends(get_db),
+):
+    """**Deletes a measurement** by a id"""
+    return delete_measurements(model_db=cvpm, db=db, measurement_id=measurement_id)
