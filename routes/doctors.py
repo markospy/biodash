@@ -3,11 +3,11 @@ import os
 
 from fastapi import APIRouter, Depends, Request, status
 from fastapi.responses import JSONResponse
-from sqlalchemy import select, update, delete
+from sqlalchemy import select, update, delete, distinct, func
 from sqlalchemy.orm import Session
 
 from dependencies.dependencies import get_db
-from models.models import Email, Doctor
+from models.models import Email, Doctor, doctor_patient
 from schemas.schemas import EmailSchema, DoctorIn, DoctorOut, DoctorUp
 
 
@@ -157,8 +157,13 @@ def get_doctor(
     doctor = {key: value for key, value in doctor_data.items() if value is not None}
     doctor["photo"] = get_url_photo(current_doctor, request, db, "get_doctor")
     doctor.update(set_email_information(current_doctor, db))
-    print(doctor)
-    return DoctorOut(**doctor)
+    patients = (
+        db.query(func.count(distinct(doctor_patient.c.patient_id)))
+        .select_from(doctor_patient)
+        .where(doctor_patient.c.doctor_id == current_doctor.id)
+        .scalar()
+    )
+    return DoctorOut(**doctor, patients=patients)
 
 
 @router.put("", status_code=status.HTTP_200_OK)
