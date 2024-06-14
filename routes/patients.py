@@ -1,16 +1,17 @@
+from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status, Body
+from fastapi import APIRouter, Depends, Query, status
 from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse
-from sqlalchemy import select, delete, update, and_, asc, desc
+from sqlalchemy import select, delete, update, asc, desc, func, distinct, between
 from sqlalchemy.orm import Session
 
 from models.models import Patient, Doctor, Address, doctor_patient
 from dependencies.dependencies import get_db
-from schemas.schemas import PatientSchema, PatientUp
+from schemas.schemas import PatientSchema, PatientSchemeList, PatientUp
 from routes.oauth import get_current_user
-from models.enumerations import Order, SortBy, Scholing, Gender
+from models.enumerations import FilterBy, Order, SortBy
 from models.exceptions import exception_if_already_exists, exception_if_not_exists
 
 
@@ -20,14 +21,14 @@ router = APIRouter(prefix="/patients", tags=["Patients"])
 def get_patient_by_id_and_doctor_id(patient_id, doctor_id, db: Session):
     """Get patient by ID"""
 
-    stmt = select(Patient).join(Patient.doctors).where(and_(Patient.id == patient_id, Doctor.id == doctor_id))
+    stmt = select(Patient).join(Patient.doctors).where(Patient.id == patient_id, Doctor.id == doctor_id)
     patient_db = db.scalars(stmt).first()
     return patient_db
 
 
 def get_patient_by_id(id, db: Session):
     stmt = select(Patient).where(Patient.id == id)
-    patient_db = db.scalars(stmt).first()
+    patient_db = db.scalar(stmt)
     return patient_db
 
 
@@ -64,6 +65,63 @@ def patient_exist_alert(patient: dict):
         )
 
 
+def choice_filter(
+    filter_by, range: list[int] | None = None, birth_date: list[datetime] | None = None, value: int | str = None
+):
+    match filter_by:
+        case "first name":
+            filter = Patient.first_name == value
+        case "last name":
+            filter = Patient.last_name == value
+        case "birth date":
+            if value:
+                filter = Patient.birth_date = value
+            else:
+                filter = between(Patient.birth_date, birth_date[0], birth_date[1])
+        case "height":
+            if value:
+                filter = Patient.height = value
+            else:
+                filter = between(Patient.height, range[0], range[1])
+        case "weight":
+            if value:
+                filter = Patient.weight = value
+            else:
+                filter = between(Patient.weight, range[0], range[1])
+        case "scholing":
+            filter = Patient.scholing == value
+        case "employee":
+            filter = Patient.employee == value
+        case SortBy.married:
+            filter = Patient.married == value
+        case "gender":
+            filter = Patient.gender == value
+    return filter
+
+
+def choice_order_by(order_by):
+    match order_by:
+        case "first name":
+            filter = Patient.first_name
+        case "last name":
+            filter = Patient.last_name
+        case "birth date":
+            filter = Patient.birth_date
+        case "height":
+            filter = Patient.height
+        case "weight":
+            filter = Patient.weight
+        case "scholing":
+            filter = Patient.scholing
+        case "employee":
+            filter = Patient.employee
+        case SortBy.married:
+            filter = Patient.married
+        case "gender":
+            filter = Patient.gender
+    return filter
+
+
 @router.post("")
 def add_patient(
     current_doctor: Annotated[Doctor, Depends(get_current_user)],
@@ -96,98 +154,80 @@ def add_patient(
         add_patient_bd(patient_dict["id"], current_doctor.id, db)
 
 
-@router.get("", response_model=list[PatientSchema])
+@router.get("", response_model=PatientSchemeList)
 def get_patient(
     current_doctor: Annotated[Doctor, Depends(get_current_user)],
-    patient_id: str | None = None,
-    filter_by: SortBy = None,
-    value=None,
+    filter_by: FilterBy,
+    value: int | str | datetime = None,
+    range_min: int | None = None,
+    range_max: int | None = None,
+    birth_date_min: datetime = Query(
+        description="Establece el limite inferior de un rango  de fecha para filtrar por fecha.",
+        default=datetime(1950, 1, 1),
+    ),
+    birth_date_max: datetime = Query(
+        description="Establece el limite superior de un rango  de fecha para filtrar por fecha.",
+        default=datetime(2025, 1, 1),
+    ),
+    order_by: SortBy = "last name",
+    order: Order = "asc",
     limit: int | None = None,
     offset: int | None = None,
-    order: Order = None,
     db: Session = Depends(get_db),
 ):
     """**Gets a patient** with their id or a **list of them** using a set of filters and sort order
 
     *Args:*
 
-        patient_id (str | None, optional): Patient id. Defaults to None.
+        filter_by: Criterio de filtrado (obligatorio). Puede ser: first_name, last_name, birth_date, gender, height, weight, scholing, employee o married. Por defecto es first_name.
 
-        filter_by (SortBy | None, optional): Sorting criteria: first_name, last_name, birth_date, gender, height, weight, scholing, employee or married. Defaults to first_name.
+        value: Valor a aplicar al filtro (opcional). Puede ser un número entero, una cadena de texto o una fecha. Si se configura, se ignorara el filtrado por rango.
 
-        value: valor que se le aplica al filtro
+        range_min y range_max: Límites inferior y superior para filtrar por rango de valores (opcional).
 
-        limit (int | None, optional): Output size. Defaults to all.
+        birth_date_min y birth_date_max: Límites inferior y superior para filtrar por rango de fechas de nacimiento (opcional). Por defecto, el límite inferior es el 1 de enero de 1950 y el límite superior es el 1 de enero de 2025.
 
-        offset (int | None, optional): Top of list. Defaults to 0.
+        order_by: Criterio de ordenamiento (opcional). Puede ser: first_name, last_name, birth_date, gender, height, weight, scholing, employee o married. Por defecto es last name.
 
-        order (Order | None, optional): asc or desc. Defaults to desc.
+        order: Orden de ordenamiento (opcional). Puede ser asc (ascendente) o desc (descendente). Por defecto es asc.
+
+        limit: Tamaño de la salida (opcional). Por defecto es todos los pacientes.
+
+        offset: Posición inicial de la lista (opcional). Por defecto es 0.
+
+        Descripción:
+
+        Este endpoint devuelve una lista de pacientes que coinciden con los criterios de filtrado y ordenamiento especificados. Si no se proporciona ningún parámetro de consulta, se devuelve la lista completa de pacientes.
+
     """
-    if patient_id:
-        stmt = (
-            select(Patient).join(Patient.doctors).where(and_(Patient.id == patient_id, Doctor.id == current_doctor.id))
-        )
-        patient_db = db.scalars(stmt).first()
-        if not patient_db:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="This patient is not registered",
-            )
-        patient_db = patient_db.__dict__
-        if patient_db.get("address_id"):
-            stmt = select(Address).where(Address.id == patient_db["address_id"])
-            address = db.scalars(stmt).first()
-            if address:
-                patient_db["address"] = address.address
-        return [PatientSchema(**patient_db)]
+    filter = choice_filter(
+        filter_by, range=[range_min, range_max], birth_date=[birth_date_min, birth_date_max], value=value
+    )
+    order_critery = choice_order_by(order_by)
 
-    match filter_by:
-        case "first name":
-            filter = Patient.first_name
-        case "last name":
-            filter = Patient.last_name
-        case "birth date":
-            filter = Patient.birth_date
-        case "height":
-            filter = Patient.height
-        case "weight":
-            filter = Patient.weight
-        case "scholing":
-            filter = Patient.scholing
-        case "employee":
-            filter = Patient.employee
-        case SortBy.married:
-            filter = Patient.married
-        case "gender":
-            filter = Patient.gender
-        case _:
-            filter = Patient.first_name
+    len = (
+        db.query(func.count(distinct(Patient.id)))
+        .select_from(Patient)
+        .where(Doctor.id == current_doctor.id, filter)
+        .scalar()
+    )
 
-    if order == Order.asc:
-        stmt = (
-            select(Patient)
-            .join(Patient.doctors)
-            .where(Doctor.id == current_doctor.id, filter == value)
-            .order_by(asc(filter))
-            .offset(offset)
-            .limit(limit)
-        )
-    else:
-        stmt = (
-            select(Patient)
-            .join(Patient.doctors)
-            .where(Doctor.id == current_doctor.id, filter == value)
-            .order_by(desc(filter))
-            .offset(offset)
-            .limit(limit)
-        )
+    order_query = asc
+    if order == "desc":
+        order_query = desc
+
+    stmt = (
+        select(Patient)
+        .join(Patient.doctors)
+        .where(Doctor.id == current_doctor.id, filter)
+        .order_by(order_query(order_critery))
+        .offset(offset)
+        .limit(limit)
+    )
 
     patients_db = db.scalars(stmt).all()
-    if not patients_db:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="There are no registered patients",
-        )
+    exception_if_not_exists(patients_db, f"Patients no fount")
+
     patients_list = []
     for patient_db in patients_db:
         patient_db = patient_db.__dict__
@@ -197,7 +237,24 @@ def get_patient(
             if address:
                 patient_db["address"] = address.address
         patients_list.append(PatientSchema(**patient_db))
-    return patients_list
+    return PatientSchemeList(len=len, patients=patients_list)
+
+
+@router.get("/{patient_id}", response_model=PatientSchema)
+def get_patient(
+    current_doctor: Annotated[Doctor, Depends(get_current_user)],
+    patient_id: str,
+    db: Session = Depends(get_db),
+):
+    patient_db = get_patient_by_id_and_doctor_id(patient_id, current_doctor.id, db)
+    exception_if_not_exists(patient_db, "This patient does not exist.")
+    patient_db_dict = patient_db.__dict__.copy()
+    if patient_db_dict["address_id"]:
+        stmt = select(Address).where(Address.id == patient_db_dict["address_id"])
+        address = db.scalars(stmt).first()
+        if address:
+            patient_db_dict["address"] = address.address
+    return PatientSchema(**patient_db_dict)
 
 
 @router.put("")
@@ -217,7 +274,7 @@ def update_patient(
 
         patient_id (str): Patient id.
     """
-    stmt = select(Patient).join(Patient.doctors).where(and_(Patient.id == patient_id, Doctor.id == current_doctor.id))
+    stmt = select(Patient).join(Patient.doctors).where(Patient.id == patient_id, Doctor.id == current_doctor.id)
     patient_db = db.scalars(stmt).first()
     if not patient_db:
         raise HTTPException(
@@ -257,13 +314,13 @@ def update_patient(
     return JSONResponse(f"The info of the patient {patient.id} has been changed successfully.")
 
 
-@router.delete("")
+@router.delete("/{patient_id}")
 def delete_patient(
     current_doctor: Annotated[Doctor, Depends(get_current_user)],
     patient_id: str,
     db: Session = Depends(get_db),
 ):
-    stmt = select(Patient).join(Patient.doctors).where(and_(Patient.id == patient_id, Doctor.id == current_doctor.id))
+    stmt = select(Patient).join(Patient.doctors).where(Patient.id == patient_id, Doctor.id == current_doctor.id)
     patient_db = db.scalars(stmt).first()
     if not patient_db:
         raise HTTPException(
@@ -278,10 +335,7 @@ def delete_patient(
         db.execute(stmt)
 
     stmt = doctor_patient.delete().where(
-        and_(
-            doctor_patient.c.patient_id == patient_id,
-            doctor_patient.c.doctor_id == current_doctor.id,
-        )
+        doctor_patient.c.patient_id == patient_id, doctor_patient.c.doctor_id == current_doctor.id
     )
     db.execute(stmt)
     db.commit()
