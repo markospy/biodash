@@ -11,10 +11,10 @@ from models.models import Doctor, Email
 from routes.oauth import get_current_user
 from sendemail.sendemail import send_email
 
-router = APIRouter(tags=["Email verification"])
+router = APIRouter(prefix="/email_verification", tags=["Email verification"])
 
 
-@router.post("/email_verification")
+@router.post("/{code}")
 def send_code(
     code: int,
     current_doctor: Annotated[Doctor, Depends(get_current_user)],
@@ -33,7 +33,7 @@ def send_code(
     return JSONResponse(content={"message": "The email is already verified"})
 
 
-@router.get("/email_verification")
+@router.get("")
 def request_code(
     current_doctor: Annotated[Doctor, Depends(get_current_user)],
     db: Session = Depends(get_db),

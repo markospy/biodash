@@ -47,7 +47,7 @@ def add(
     return add_measurement(measurement, current_doctor.id, model_db=cvpm, db=db)
 
 
-@router.get("", response_model=CardiovascularParameterOut)
+@router.get("/{patient_id}", response_model=CardiovascularParameterOut)
 def get(
     current_doctor: Annotated[Doctor, Depends(get_current_user)],
     patient_id: str,
@@ -96,7 +96,7 @@ def delete(
     return delete_measurements(model_db=cvpm, db=db, patient_id=patient_id)
 
 
-@router.delete("/byId", summary="Delete measures by ID")
+@router.delete("/{measurement_id}", summary="Delete measures by ID")
 def delete(
     current_doctor: Annotated[Doctor, Depends(get_current_user)],
     measurement_id: int,
