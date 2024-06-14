@@ -21,6 +21,7 @@ class DoctorOut(Doctor):
     photo: str | None = Field(
         default=None, examples=["http://biodash.com/photos/3210.png"], description="URL con el avatar del doctor"
     )
+    patients: int = Field(description="Numeros de pacientes registrados por el médico", ge=0)
 
 
 class DoctorIn(Doctor):
@@ -80,6 +81,11 @@ class PatientSchema(BaseModel):
     address: dict | None = Field(
         default=None, examples=[{"Provincia": "Ciefuegos", "Barrio": "Pastorita"}], description="Recibe un objeto"
     )
+
+
+class PatientSchemeList(BaseModel):
+    len: int | None = 0
+    patients: list[PatientSchema] | None = None
 
 
 class PatientUp(PatientSchema):
