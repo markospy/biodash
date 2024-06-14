@@ -19,7 +19,7 @@ database_config = DatabaseConfig(
     env_loader.database,
 )
 
-engine = create_engine_from_user_choice("sqlite", database_config)
+engine = create_engine_from_user_choice("mysql_cloud", database_config)
 
 session_local = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
