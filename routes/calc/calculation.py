@@ -5,9 +5,10 @@ from sqlalchemy import select, func
 from models.exceptions import exception_if_not_exists, OperationError
 from models.enumerations import Operation
 
+
 def select_operation(operation: Operation, value: float):
     match operation:
-        case Operation.minimum :
+        case Operation.minimum:
             return func.min(value)
         case Operation.maximum:
             return func.max(value)

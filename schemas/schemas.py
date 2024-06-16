@@ -144,3 +144,16 @@ class AnalizeCardiovascular(BaseModel):
     systolic: Analize
     diastolic: Analize
     heart_rate: Analize
+
+
+class WarningBloodSugar(BaseModel):
+    patient_id: str = Field(description="Id del paciente")
+    first_name: str
+    last_name: str
+    value: float = Field(description="Valor de la glucemia")
+    date: datetime = Field(description="Fecha y hora de registro")
+
+
+class WarningCardiovascularParameter(CardiovascularParameter):
+    first_name: str
+    last_name: str
