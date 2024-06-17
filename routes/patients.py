@@ -1,7 +1,8 @@
 from datetime import datetime
+from random import randint
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Security, Query, status
 from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse
 from sqlalchemy import select, delete, update, asc, desc, func, distinct, between
@@ -13,6 +14,7 @@ from schemas.schemas import PatientSchema, PatientSchemeList, PatientUp
 from routes.oauth import get_current_user
 from models.enumerations import FilterBy, Order, SortBy
 from models.exceptions import exception_if_already_exists, exception_if_not_exists
+from .oauth import get_password_hash
 
 
 router = APIRouter(prefix="/patients", tags=["Patients"])
@@ -46,11 +48,16 @@ def check_and_add_address(patient: dict, db: Session):
     return patient
 
 
-def add_patient_bd(patient_id, doctor_id, db: Session):
+def add_patient_bd(patient_id, patient_password, doctor_id, db: Session):
     smt = doctor_patient.insert().values(patient_id=patient_id, doctor_id=doctor_id)
     db.execute(smt)
     db.commit()
-    return JSONResponse({"message": "Patient registration successful", "id": patient_id})
+    if not patient_password:
+        return JSONResponse(content={"message": "Patient registration successful", "id": patient_id}, status_code=201)
+    return JSONResponse(
+        content={"message": "Patient registration successful", "id": patient_id, "password": patient_password},
+        status_code=201,
+    )
 
 
 def patient_exist_alert(patient: dict):
@@ -124,7 +131,7 @@ def choice_order_by(order_by):
 
 @router.post("")
 def add_patient(
-    current_doctor: Annotated[Doctor, Depends(get_current_user)],
+    current_doctor: Annotated[Doctor, Security(get_current_user, scopes=["doctor"])],
     patient: PatientSchema,
     isExist: bool = False,
     patient_id: str | None = None,
@@ -144,19 +151,21 @@ def add_patient(
     if isExist:
         patient_db = get_patient_by_id(patient_id, db)
         exception_if_not_exists(patient_db, "This patient does not exist.")
-        add_patient_bd(patient_id, current_doctor.id, db)
+        return add_patient_bd(patient_id, None, current_doctor.id, db)
     else:
         patient_db = get_patient_by_id(patient.id, db)
         patient_exist_alert(patient_db)
         patient_dict = patient.model_dump(exclude_unset=True)
         patient_dict = check_and_add_address(patient_dict, db)
+        password = patient_dict["first_name"] + "_" + str(randint(10_000, 99_999))
+        patient_dict["password"] = get_password_hash(password)
         db.add(Patient(**patient_dict))
-        add_patient_bd(patient_dict["id"], current_doctor.id, db)
+        return add_patient_bd(patient_dict["id"], password, current_doctor.id, db)
 
 
 @router.get("", response_model=PatientSchemeList)
 def get_patient(
-    current_doctor: Annotated[Doctor, Depends(get_current_user)],
+    current_doctor: Annotated[Doctor, Security(get_current_user, scopes=["doctor"])],
     filter_by: FilterBy,
     value: int | str | datetime = None,
     range_min: int | None = None,
@@ -242,7 +251,7 @@ def get_patient(
 
 @router.get("/{patient_id}", response_model=PatientSchema)
 def get_patient(
-    current_doctor: Annotated[Doctor, Depends(get_current_user)],
+    current_doctor: Annotated[Doctor, Security(get_current_user, scopes=["doctor"])],
     patient_id: str,
     db: Session = Depends(get_db),
 ):
@@ -259,7 +268,7 @@ def get_patient(
 
 @router.put("")
 def update_patient(
-    current_doctor: Annotated[Doctor, Depends(get_current_user)],
+    current_doctor: Annotated[Doctor, Security(get_current_user, scopes=["doctor"])],
     patient_id: str,
     patient: PatientUp,
     db: Session = Depends(get_db),
@@ -287,6 +296,7 @@ def update_patient(
         patient.first_name = patient_db.first_name
 
     patient_dict = patient.model_dump(exclude_unset=True)
+    patient_dict["password"] = get_password_hash(patient_dict["password"])
     if patient_dict.get("address"):
         address_db = db.scalars(select(Address).where(Address.address == patient_dict["address"])).first()
         if not address_db:
@@ -316,7 +326,7 @@ def update_patient(
 
 @router.delete("/{patient_id}")
 def delete_patient(
-    current_doctor: Annotated[Doctor, Depends(get_current_user)],
+    current_doctor: Annotated[Doctor, Security(get_current_user, scopes=["doctor"])],
     patient_id: str,
     db: Session = Depends(get_db),
 ):

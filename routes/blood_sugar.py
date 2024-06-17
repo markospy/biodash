@@ -1,12 +1,12 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Security
 from sqlalchemy.orm import Session
 
 from models.models import Doctor
 from models.models import BloodSugarLevel as bsl
 from dependencies.dependencies import get_db
-from schemas.schemas import BloodSugarLevel, BloodSugarLevelUpdate, BloodSugarLevelOut
+from schemas.schemas import BloodSugarLevel, BloodSugarLevelUpdate, BloodSugarLevelOutList, BloodSugarLevelOut
 from routes.oauth import get_current_user
 from cruds.measures import (
     add_measurement,
@@ -29,7 +29,7 @@ router = APIRouter(prefix="/blood_sugar", tags=["Blood sugar"])
 
 @router.post("")
 def add(
-    current_doctor: Annotated[Doctor, Depends(get_current_user)],
+    current_doctor: Annotated[Doctor, Security(get_current_user, scopes=["doctor"])],
     measurement: BloodSugarLevel,
     db: Session = Depends(get_db),
 ):
@@ -37,26 +37,27 @@ def add(
     return add_measurement(measurement, current_doctor.id, model_db=bsl, db=db)
 
 
-@router.get("/{patient_id}", response_model=BloodSugarLevelOut)
+@router.get("/{patient_id}", response_model=BloodSugarLevelOutList)
 def get(
-    current_doctor: Annotated[Doctor, Depends(get_current_user)],
+    current_doctor: Annotated[Doctor, Security(get_current_user, scopes=["doctor"])],
     patient_id: str,
     db: Session = Depends(get_db),
 ):
     """**Obtains all measurements of the patient's blood sugar level**"""
     measurements = get_all_measurements(patient_id, model_db=bsl, db=db)
 
-    return BloodSugarLevelOut(
+    return BloodSugarLevelOutList(
         patient_id=patient_id,
         measures=[
-            BloodSugarLevelUpdate(date=measurement.date, value=measurement.value) for measurement in measurements
+            BloodSugarLevelOut(date=measurement.date, value=measurement.value, doctor=measurement.doctor_id)
+            for measurement in measurements
         ],
     )
 
 
 @router.put("")
 def update(
-    current_doctor: Annotated[Doctor, Depends(get_current_user)],
+    current_doctor: Annotated[Doctor, Security(get_current_user, scopes=["doctor"])],
     measurment_id: int,
     measurement: BloodSugarLevelUpdate,
     db: Session = Depends(get_db),
@@ -83,7 +84,7 @@ def delete(
 
 @router.delete("/{measurement_id}", summary="Delete measures by ID")
 def delete(
-    current_doctor: Annotated[Doctor, Depends(get_current_user)],
+    current_doctor: Annotated[Doctor, Security(get_current_user, scopes=["doctor"])],
     measurement_id: int,
     db: Session = Depends(get_db),
 ):

@@ -1,13 +1,17 @@
 from typing import Annotated
-from datetime import datetime
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Security
 from sqlalchemy.orm import Session
 
 from models.models import Doctor
 from models.models import CardiovascularParameter as cvpm
 from dependencies.dependencies import get_db
-from schemas.schemas import CardiovascularParameter, CardiovascularParameterUpdate, CardiovascularParameterOut
+from schemas.schemas import (
+    CardiovascularParameter,
+    CardiovascularParameterOutList,
+    CardiovascularParameterUpdate,
+    CardiovascularParameterOut,
+)
 from routes.oauth import get_current_user
 from cruds.measures import (
     add_measurement,
@@ -37,9 +41,9 @@ def manage_null_values(measurement: CardiovascularParameterOut, result):
 router = APIRouter(prefix="/blood_pressure", tags=["Blood pressure"])
 
 
-@router.post("")
+@router.post("/")
 def add(
-    current_doctor: Annotated[Doctor, Depends(get_current_user)],
+    current_doctor: Annotated[Doctor, Security(get_current_user, scopes=["doctor"])],
     measurement: CardiovascularParameter,
     db: Session = Depends(get_db),
 ):
@@ -49,16 +53,16 @@ def add(
 
 @router.get("/{patient_id}", response_model=CardiovascularParameterOut)
 def get(
-    current_doctor: Annotated[Doctor, Depends(get_current_user)],
+    current_doctor: Annotated[Doctor, Security(get_current_user, scopes=["doctor"])],
     patient_id: str,
     db: Session = Depends(get_db),
 ):
     """**Obtains all measurements of the patient's cardiovascular parameters**"""
     measurements = get_all_measurements(patient_id, model_db=cvpm, db=db)
-    return CardiovascularParameterOut(
+    return CardiovascularParameterOutList(
         patient_id=patient_id,
         measures=[
-            CardiovascularParameterUpdate(
+            CardiovascularParameterOut(
                 systolic=measurement.systolic,
                 diastolic=measurement.diastolic,
                 heart_rate=measurement.heart_rate,
@@ -69,9 +73,9 @@ def get(
     )
 
 
-@router.put("")
+@router.put("/")
 def update(
-    current_doctor: Annotated[Doctor, Depends(get_current_user)],
+    current_doctor: Annotated[Doctor, Security(get_current_user, scopes=["doctor"])],
     measurement_id: int,
     measurement: CardiovascularParameterUpdate,
     db: Session = Depends(get_db),
@@ -88,7 +92,7 @@ def update(
 
 @router.delete("/all", summary="Delete all patient measures")
 def delete(
-    current_doctor: Annotated[Doctor, Depends(get_current_user)],
+    current_doctor: Annotated[Doctor, Security(get_current_user, scopes=["doctor"])],
     patient_id: str,
     db: Session = Depends(get_db),
 ):
@@ -98,7 +102,7 @@ def delete(
 
 @router.delete("/{measurement_id}", summary="Delete measures by ID")
 def delete(
-    current_doctor: Annotated[Doctor, Depends(get_current_user)],
+    current_doctor: Annotated[Doctor, Security(get_current_user, scopes=["doctor"])],
     measurement_id: int,
     db: Session = Depends(get_db),
 ):

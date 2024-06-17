@@ -1,7 +1,7 @@
 from typing import Annotated
 import os
 
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, Request, status, Security
 from fastapi.responses import JSONResponse
 from sqlalchemy import select, update, delete, distinct, func
 from sqlalchemy.orm import Session
@@ -146,7 +146,7 @@ def register_doctor(doctor: DoctorIn, db: Session = Depends(get_db)):
 
 @router.get("", response_model=DoctorOut, status_code=status.HTTP_200_OK)
 def get_doctor(
-    current_doctor: Annotated[Doctor, Depends(get_current_user)],
+    current_doctor: Annotated[Doctor, Security(get_current_user, scopes=["doctor"])],
     request: Request,
     db: Session = Depends(get_db),
 ):
@@ -168,7 +168,7 @@ def get_doctor(
 
 @router.put("", status_code=status.HTTP_200_OK)
 def update_doctor(
-    current_doctor: Annotated[Doctor, Depends(get_current_user)],
+    current_doctor: Annotated[Doctor, Security(get_current_user, scopes=["doctor"])],
     doctor: DoctorUp,
     db: Session = Depends(get_db),
 ):
@@ -200,7 +200,7 @@ def update_doctor(
 
 @router.delete("", status_code=status.HTTP_200_OK)
 def delete_doctor(
-    current_doctor: Annotated[Doctor, Depends(get_current_user)],
+    current_doctor: Annotated[Doctor, Security(get_current_user, scopes=["doctor"])],
     db: Session = Depends(get_db),
 ):
     """

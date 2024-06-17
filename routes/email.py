@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, Security
 from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse
 from sqlalchemy import select, update
@@ -17,7 +17,7 @@ router = APIRouter(prefix="/email_verification", tags=["Email verification"])
 @router.post("/{code}")
 def send_code(
     code: int,
-    current_doctor: Annotated[Doctor, Depends(get_current_user)],
+    current_doctor: Annotated[Doctor, Security(get_current_user, scopes=["doctor"])],
     db: Session = Depends(get_db),
 ):
     """**Verify the email of the authenticated doctor with the code sent to the email**"""
@@ -35,7 +35,7 @@ def send_code(
 
 @router.get("")
 def request_code(
-    current_doctor: Annotated[Doctor, Depends(get_current_user)],
+    current_doctor: Annotated[Doctor, Security(get_current_user, scopes=["doctor"])],
     db: Session = Depends(get_db),
 ):
     """**Send a new validation email to the doctor's registered email**"""

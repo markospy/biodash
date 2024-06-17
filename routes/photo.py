@@ -2,7 +2,7 @@ from typing import Annotated
 import os
 from PIL import Image
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, UploadFile, Security
 from fastapi.responses import JSONResponse
 
 from sqlalchemy import update
@@ -26,9 +26,10 @@ def create_avatar(filename: str, doctor_id: str):
     image.save(PATH_PHOTOS + doctor_id + ".png")
     os.remove(PATH_PHOTOS + filename)
 
+
 @router.post("/upload_photo")
 async def upload_photo(
-    current_doctor: Annotated[Doctor, Depends(get_current_user)],
+    current_doctor: Annotated[Doctor, Security(get_current_user, scopes=["doctor"])],
     background_task: BackgroundTasks,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
@@ -39,9 +40,7 @@ async def upload_photo(
         photo.write(content)
         photo.close()
 
-    background_task.add_task(
-        create_avatar, filename=file.filename, doctor_id=current_doctor.id
-    )
+    background_task.add_task(create_avatar, filename=file.filename, doctor_id=current_doctor.id)
     stmt = (
         update(Doctor)
         .where(Doctor.id == current_doctor.id)

@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Security
 from fastapi.responses import JSONResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -18,7 +18,7 @@ router = APIRouter(prefix="/analize", tags=["Analize"])
 
 @router.get("/blood_sugar", response_model=Analize)
 def analize(
-    current_doctor: Annotated[Doctor, Depends(get_current_user)],
+    current_doctor: Annotated[Doctor, Security(get_current_user, scopes=["doctor"])],
     patient_id: str,
     db: Session = Depends(get_db),
 ):
@@ -32,7 +32,7 @@ def analize(
 
 @router.get("/warning_blood_sugar", response_model=list[WarningBloodSugar])
 def get_warning_patients(
-    current_doctor: Annotated[Doctor, Depends(get_current_user)],
+    current_doctor: Annotated[Doctor, Security(get_current_user, scopes=["doctor"])],
     value: float | None = 6.1,
     day: int | None = 1,
     hours: int | None = 0,
@@ -41,7 +41,6 @@ def get_warning_patients(
     stmt = select(BloodSugarLevel).where(
         BloodSugarLevel.value >= value,
         BloodSugarLevel.date >= (datetime.now() - timedelta(days=day, hours=hours)),
-        BloodSugarLevel.doctor_id == current_doctor.id,
     )
 
     patients_measures = db.scalars(stmt).all()

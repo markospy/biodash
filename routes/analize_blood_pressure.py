@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Security
 from fastapi.responses import JSONResponse
 from sqlalchemy import select, or_
 from sqlalchemy.orm import Session
@@ -19,7 +19,7 @@ router = APIRouter(prefix="/analize", tags=["Analize"])
 
 @router.get("/blood_pressure", response_model=AnalizeCardiovascular)
 def analize(
-    current_doctor: Annotated[Doctor, Depends(get_current_user)],
+    current_doctor: Annotated[Doctor, Security(get_current_user, scopes=["doctor"])],
     patient_id: str,
     db: Session = Depends(get_db),
 ):
@@ -44,7 +44,7 @@ def analize(
 
 @router.get("/warning_cardiovascular_parameter", response_model=list[WarningCardiovascularParameter])
 def get_warning_patients(
-    current_doctor: Annotated[Doctor, Depends(get_current_user)],
+    current_doctor: Annotated[Doctor, Security(get_current_user, scopes=["doctor"])],
     systolic: int | None = 120,
     diastolic: int | None = 80,
     heart_rate: int | None = 100,
@@ -54,7 +54,6 @@ def get_warning_patients(
 ):
     stmt = select(CardiovascularParameter).where(
         CardiovascularParameter.date >= (datetime.now() - timedelta(days=day, hours=hours)),
-        CardiovascularParameter.doctor_id == current_doctor.id,
         or_(
             CardiovascularParameter.systolic >= systolic,
             CardiovascularParameter.diastolic >= diastolic,
