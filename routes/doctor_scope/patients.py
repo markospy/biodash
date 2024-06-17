@@ -14,7 +14,7 @@ from schemas.schemas import PatientSchema, PatientSchemeList, PatientUp
 from routes.oauth import get_current_user
 from models.enumerations import FilterBy, Order, SortBy
 from models.exceptions import exception_if_already_exists, exception_if_not_exists
-from .oauth import get_password_hash
+from ..oauth import get_password_hash
 
 
 router = APIRouter(prefix="/patients", tags=["Patients"])

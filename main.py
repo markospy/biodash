@@ -3,18 +3,19 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
+from routes import root
+
 from routes.doctor_scope import (
     analize_blood_pressure,
     analize_blood_sugar,
     blood_pressure,
     blood_sugar,
     doctors,
-    oauth,
     patients,
     email,
     photo,
-    root,
 )
+from routes import oauth
 from routes.patient_scope import (
     analize_blood_pressure_patient,
     analize_blood_sugar_patient,

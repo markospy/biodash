@@ -52,7 +52,7 @@ def get_user(id: str, db: Session):
             last_name=user.last_name,
             specialty=user.specialty,
             password=user.password,
-            scopes=["doctor", "patient"],
+            scopes=["doctor", " "],
         )
     else:
         user = db.scalar(select(Patient).where(Patient.id == id))
@@ -131,7 +131,7 @@ def login_for_access_token(
 
     scopes = [user.scopes[0]]
     if len(user.scopes) == 2:
-        scopes = [user.scopes[0], user.scopes[1]]
+        scopes = [user.scopes[0]]
 
     print("Scope: ", scopes)
     access_token = create_access_token(
