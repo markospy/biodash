@@ -28,6 +28,10 @@ class DoctorIn(Doctor):
     password: str = Field(min_length=6, examples=["jH3.*3tH2nAs_p"])
 
 
+class DoctorScopes(DoctorIn):
+    scopes: list[str]
+
+
 class DoctorUp(DoctorIn):
     id: str | None = Field(examples=["3210"], description="El identificador del doctor", default=None)
     first_name: str | None = Field(examples=["Marcos Antonio"], default=None)
@@ -78,9 +82,14 @@ class PatientSchema(BaseModel):
     )
     employee: bool | None = Field(default=None, examples=[True])
     married: bool | None = Field(default=None, examples=[True])
+    password: str | None = Field(default=None, frozen=True)
     address: dict | None = Field(
         default=None, examples=[{"Provincia": "Ciefuegos", "Barrio": "Pastorita"}], description="Recibe un objeto"
     )
+
+
+class PatientScopes(PatientSchema):
+    scopes: list[str]
 
 
 class PatientSchemeList(BaseModel):
@@ -91,6 +100,8 @@ class PatientSchemeList(BaseModel):
 class PatientUp(PatientSchema):
     id: str | None = None
     first_name: str | None = None
+    last_name: str | None = None
+    password: str | None = None
 
     @validator("*", pre=True, allow_reuse=True)
     def check_null_values(cls, value):
@@ -115,9 +126,13 @@ class CardiovascularParameter(CardiovascularParameterUpdate):
     patient_id: str
 
 
-class CardiovascularParameterOut(BaseModel):
-    patient_id: str
-    measures: List[CardiovascularParameterUpdate]
+class CardiovascularParameterOut(CardiovascularParameterUpdate):
+    doctor_id: str
+
+
+class CardiovascularParameterOutList(BaseModel):
+    patient_id: int
+    measures: List[CardiovascularParameterOut]
 
 
 class BloodSugarLevelUpdate(BaseModel):
@@ -129,9 +144,13 @@ class BloodSugarLevel(BloodSugarLevelUpdate):
     patient_id: str | None = None
 
 
-class BloodSugarLevelOut(BaseModel):
+class BloodSugarLevelOut(BloodSugarLevelUpdate):
+    doctor: str | None = None
+
+
+class BloodSugarLevelOutList(BaseModel):
     patient_id: int
-    measures: List[BloodSugarLevelUpdate]
+    measures: List[BloodSugarLevelOut]
 
 
 class Analize(BaseModel):
