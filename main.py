@@ -15,6 +15,13 @@ from routes import (
     photo,
     root,
 )
+from routes.patient import (
+    analize_blood_pressure_patient,
+    analize_blood_sugar_patient,
+    blood_pressure_patient,
+    blood_sugar_patient,
+    patient,
+)
 from database.database import create_tables
 
 
@@ -46,3 +53,8 @@ app.include_router(analize_blood_sugar.router)
 app.include_router(email.router)
 app.include_router(photo.router)
 app.include_router(oauth.router)
+app.include_router(patient.router)
+app.include_router(blood_pressure_patient.router)
+app.include_router(blood_sugar_patient.router)
+app.include_router(analize_blood_pressure_patient.router)
+app.include_router(analize_blood_sugar_patient.router)
