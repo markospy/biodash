@@ -69,6 +69,7 @@ class Patient(Base):
     scholing: Mapped[Scholing | None]
     employee: Mapped[bool | None]
     married: Mapped[bool | None]
+    password:  Mapped[str]
     doctors: Mapped[list["Doctor"]] = relationship(
         secondary=doctor_patient,
         cascade="all, delete",
