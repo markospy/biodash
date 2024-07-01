@@ -11,14 +11,14 @@ class Scholing(str, Enum):
     secondary = "secondary"
     pre_university = "pre university"
     university = "university"
-    middle_technical = "middle technical"
+    middle_technical = "middle_technical"
     other = "other"
 
 
 class SortBy(str, Enum):
-    first_name = "first name"
-    last_name = "last name"
-    birth_date = "birth date"
+    first_name = "first_name"
+    last_name = "last_name"
+    birth_date = "birth_date"
     gender = "gender"
     height = "height"
     weight = "weight"
@@ -27,9 +27,9 @@ class SortBy(str, Enum):
 
 
 class FilterBy(str, Enum):
-    first_name = "first name"
-    last_name = "last name"
-    birth_date = "birth date"
+    first_name = "first_name"
+    last_name = "last_name"
+    birth_date = "birth_date"
     gender = "gender"
     height = "height"
     weight = "weight"
