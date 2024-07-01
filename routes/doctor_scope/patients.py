@@ -2,20 +2,20 @@ from datetime import datetime
 from random import randint
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Security, Query, status
+from fastapi import APIRouter, Depends, Query, Security, status
 from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse
-from sqlalchemy import select, delete, update, asc, desc, func, distinct, between
+from sqlalchemy import asc, between, delete, desc, distinct, func, select, update
 from sqlalchemy.orm import Session
 
-from models.models import Patient, Doctor, Address, doctor_patient
 from dependencies.dependencies import get_db
-from schemas.schemas import PatientSchema, PatientSchemeList, PatientUp
-from routes.oauth import get_current_user
 from models.enumerations import FilterBy, Order, SortBy
 from models.exceptions import exception_if_already_exists, exception_if_not_exists
-from ..oauth import get_password_hash
+from models.models import Address, Doctor, Patient, doctor_patient
+from routes.oauth import get_current_user
+from schemas.schemas import PatientSchema, PatientSchemeList, PatientUp
 
+from ..oauth import get_password_hash
 
 router = APIRouter(prefix="/patients", tags=["Patients"])
 
@@ -166,7 +166,7 @@ def add_patient(
 @router.get("", response_model=PatientSchemeList)
 def get_patient(
     current_doctor: Annotated[Doctor, Security(get_current_user, scopes=["doctor"])],
-    filter_by: FilterBy,
+    filter_by: FilterBy = "first_name",
     value: int | str | datetime = None,
     range_min: int | None = None,
     range_max: int | None = None,
@@ -235,7 +235,7 @@ def get_patient(
     )
 
     patients_db = db.scalars(stmt).all()
-    exception_if_not_exists(patients_db, f"Patients no fount")
+    exception_if_not_exists(patients_db, "Patients no fount")
 
     patients_list = []
     for patient_db in patients_db:
